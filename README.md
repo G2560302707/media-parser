@@ -53,7 +53,7 @@ Media-Parser是一款专为短视频创作者与开发者打造的**100%原生�
 | **夸克AI** | ✓ | ✓ |  | ✓ | ✓ | ✓ |  |  |  |  | [查看](docs/parsers/quark-ai.md) |
 | **通义千问** | ✓ | ✓ |  | ✓ | ✓ | ✓ | ✓ |  |  |  | [查看](docs/parsers/qianwen.md) |
 | **腾讯元宝** | ✓ | ✓ |  | ✓ | ✓* | ✓ | ✓ |  |  |  | [查看](docs/parsers/yuanbao.md) |
-| **闲鱼** | ✓ | ✓ |  | ✓ | ✓ | ✓ |  |  |  |  | [查看](docs/parsers/xianyu.md) |
+| **闲鱼** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  |  |  |  | [查看](docs/parsers/xianyu.md) |
 | **拼多多** | ✓ | ✓ |  | ✓ | ✓ | ✓ |  |  | ✓ |  | [查看](docs/parsers/pinduoduo.md) |
 | **Soul** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  |  |  |  | [查看](docs/parsers/soul.md) |
 | **汽水音乐** | ✓ | ✓ |  | ✓ | ✓ |  |  |  | ✓ | ✓ | [查看](docs/parsers/qsmusic.md) |

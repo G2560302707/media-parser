@@ -1545,8 +1545,8 @@
     },
     {
       "platform": "闲鱼",
-      "url": "https://e.tb.cn/h.8i8z2O3V2e1s7jh?tk=lK6ITYk0uYX",
-      "pattern": "闲鱼商品/分享短链 (e.tb.cn/h.8i8z2O3V2e1s7jh)",
+      "url": "https://m.tb.cn/h.jabJ2N9?tk=R4rQTJFs4aG",
+      "pattern": "闲鱼商品/分享短链 (m.tb.cn/h.jabJ2N9)",
       "media_types": [
         "images"
       ],
@@ -1555,7 +1555,7 @@
         "cover",
         "title"
       ],
-      "note": "2026-08 真实反馈验证: 闲鱼商品 (商品ID: 899895727372,"
+      "note": "2026-10 真实反馈验证: 闲鱼商品 (商品ID: 1086999547230)"
     },
     {
       "platform": "豆包",
