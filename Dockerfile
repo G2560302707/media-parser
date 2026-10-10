@@ -20,9 +20,10 @@ RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
 # 创建专用非 root 运行用户
 RUN addgroup --system app && adduser --system --ingroup app app
 
-# 复制项目所有代码
+# 复制项目所有代码并设置基础读取权限兜底
 COPY --chown=app:app . /app/
-RUN chmod +x /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh && \
+    chmod -R a+rX /app
 
 # 开放 8051 端口
 EXPOSE 8051
