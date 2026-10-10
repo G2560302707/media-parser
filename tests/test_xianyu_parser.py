@@ -35,20 +35,26 @@ class XianyuParserTest(unittest.TestCase):
         mtop_init_resp = Mock()
         mtop_init_resp.raise_for_status.return_value = None
 
-        mtop_data_resp = Mock()
-        mtop_data_resp.raise_for_status.return_value = None
-        mtop_data_resp.json.return_value = {
+        mtop_info_resp = Mock()
+        mtop_info_resp.raise_for_status.return_value = None
+        mtop_info_resp.json.return_value = {
             "ret": ["SUCCESS::接口调用成功"],
             "data": {
-                "itemDO": {
-                    "title": "测试闲鱼商品标题",
-                    "desc": "商品详细描述",
-                    "soldPrice": "99.0",
-                    "imageInfos": [
-                        {"url": "http://img.alicdn.com/bao/uploaded/i1/test1.png"},
-                        {"url": "http://img.alicdn.com/bao/uploaded/i2/test2.png"}
-                    ],
-                },
+                "title": "测试闲鱼商品标题",
+                "description": "商品详细描述",
+                "reservePrice": "99.0",
+                "imageInfos": [
+                    {"url": "http://img.alicdn.com/bao/uploaded/i1/test1.png"},
+                    {"url": "http://img.alicdn.com/bao/uploaded/i2/test2.png"}
+                ],
+            },
+        }
+
+        mtop_awesome_resp = Mock()
+        mtop_awesome_resp.raise_for_status.return_value = None
+        mtop_awesome_resp.json.return_value = {
+            "ret": ["SUCCESS::接口调用成功"],
+            "data": {
                 "sellerDO": {
                     "nick": "卖家小明",
                 },
@@ -56,11 +62,14 @@ class XianyuParserTest(unittest.TestCase):
         }
 
         def side_effect(url, *args, **kwargs):
-            if "mtop.taobao.idle.awesome.detail" in url:
+            if "mtop" in url:
                 params = kwargs.get("params", {})
-                if params.get("data") == "{}":
+                if params.get("sign") == "dummy":
                     return mtop_init_resp
-                return mtop_data_resp
+                if "item.info" in url:
+                    return mtop_info_resp
+                if "awesome.detail" in url:
+                    return mtop_awesome_resp
             return page_resp
 
         url = "https://www.goofish.com/item?itemId=834469366646"
@@ -90,14 +99,14 @@ class XianyuParserTest(unittest.TestCase):
         mtop_data_resp = Mock()
         mtop_data_resp.raise_for_status.return_value = None
         mtop_data_resp.json.return_value = {
-            "ret": ["FAIL_BIZ_ITEM_DEL_NOT_FOUND::您要看的宝贝不存在或已被删除啦!"],
+            "ret": ["FAIL_BIZ_ITEM_QUERY_FAILED::查询商品信息失败"],
             "data": {},
         }
 
         def side_effect(url, *args, **kwargs):
-            if "mtop.taobao.idle.awesome.detail" in url:
+            if "mtop" in url:
                 params = kwargs.get("params", {})
-                if params.get("data") == "{}":
+                if params.get("sign") == "dummy":
                     return mtop_init_resp
                 return mtop_data_resp
             return page_resp

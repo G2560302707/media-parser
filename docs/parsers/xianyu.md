@@ -20,17 +20,16 @@
 
 1. **短链展开与 itemId 提取**：
    * 请求淘口令或短链（`m.tb.cn` / `e.tb.cn`），从 HTML 内联跳转变量 `var url = '...'` 或查询参数中提取目标商品 `itemId` / `id` 及初始标价。
-2. **移动端 H5 MTOP 动态令牌签名提取**：
-   * 采用闲鱼官方 H5 端 MTOP 接口：`mtop.taobao.idle.awesome.detail` (AppKey: `12574478`)。
-   * **令牌握手**：先向网关发起初始化请求获取 `_m_h5_tk` Token。
-   * **动态签名计算**：使用 `md5(token + "&" + t + "&" + appKey + "&" + data)` 计算合法 `sign`。
-   * **媒体与元数据解析**：
-     * **高清图集**：解析 `itemDO.imageInfos` 提取所有原图直链（由 `img.alicdn.com` 托管，自动清洗缩略裁剪参数，免防盗链且支持 CORS 跨域展示）。
-     * **封面**：默认提取相册首图作为主图封面。
-     * **标题与文案**：提取 `itemDO.title` 与 `itemDO.desc`。
-     * **卖家昵称**：优先提取 `flowData.floating` 浮动组件中的未脱敏昵称，降级提取 `sellerDO.nick`。
-     * **视频直链**：若商品包含介绍视频，自动递归提取视频直链。
-   * **状态感知**：若宝贝已删除或下架（`FAIL_BIZ_ITEM_DEL_NOT_FOUND`），自动设置 `ITEM_NOT_FOUND` 业务提示。
+2. **双层移动端 H5 MTOP 动态令牌签名提取**：
+   * **一级高可用接口（抗风控核心）**：`mtop.taobao.idle.item.info` (AppKey: `12574478`)。
+     * **免风控特性**：不含个性化追踪负载，完全不受阿里霸下 (Baxia) WAF `RGV587_ERROR` 限制，无需任何登录态与 Cookie。
+     * **核心数据提取**：稳定解析 `data.title`（标题）、`data.description`（详细文案）、`data.reservePrice`（价格）、`data.imageInfos`（高清图集与主图，托管于 `img.alicdn.com`，自动清洗裁剪后缀，天然支持 CORS 跨域免防盗链）。
+   * **二级扩展接口（非阻塞补充）**：`mtop.taobao.idle.awesome.detail`。
+     * 在非阻塞异常捕获下尝试请求，用于补充卖家昵称（`flowData.floating` / `sellerDO.nick`）及视频直链。若遭遇 WAF 拦截则自动跳过，不影响核心图文与价格交付。
+   * **令牌握手与动态签名**：
+     * 向网关发起首轮请求获取 `_m_h5_tk` 临时令牌。
+     * 使用 `md5(token + "&" + t + "&" + appKey + "&" + data)` 计算动态 `sign` 请求数据。
+   * **状态感知**：若宝贝已删除或下架（`FAIL_BIZ_ITEM_DEL_NOT_FOUND` / `FAIL_BIZ_ITEM_QUERY_FAILED`），自动设置 `ITEM_NOT_FOUND` 业务提示。
 
 ---
 
