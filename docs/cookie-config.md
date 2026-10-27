@@ -17,6 +17,7 @@
 | **豆包 AI** | `DOUBAO_COOKIE` | - | 🟡 **可选 (无水印)**：公开图文免 Cookie；提取 1080P 无水印视频需要 | `sessionid_ss=xxx;` |
 | **即梦 AI** | `JIMENG_COOKIE` | - | 🟡 **可选 (扩展鉴权)**：公开分享免 Cookie；私有草稿/活动页鉴权需要 | `sessionid=xxx;` |
 | **微博** | `WEIBO_COOKIE` | - | 🟡 **可选 (防访客限制)**：常规公开博文免 Cookie；机房 IP 遭遇访客拦截或解析粉丝可见内容时配置 | `SUB=xxx;` |
+| **知乎** | `ZHIHU_COOKIE` | - | 🟡 **可选 (防风控/专栏文章)**：常规公开内容免 Cookie；机房 IP 遭遇 40362 风控或提取登录可见专栏文章时配置 | `d_c0=xxx; z_c0=xxx;` |
 | **抖音** | `DOUYIN_COOKIE` | `DY_COOKIE` | 🟢 **常规免配 (100% 免配)**：常规短视频/普通图文/音乐无需任何凭据；<br/>🟡 **实况图 (机房 IP)**：需完整登录 Cookie + `UIFID`；<br/>🟡 **放映厅长片**：需滑块通行证 `s_v_web_id` | 实况图需: `UIFID=xxx; sessionid=xxx; sessionid_ss=xxx; passport_csrf_token=xxx; odin_tt=xxx;`<br/>(即完整登录 Cookie 拼入 UIFID)；<br/>放映厅需: `s_v_web_id=verify_xxx;` |
 
 ---
@@ -209,6 +210,14 @@ docker compose up -d
    SUB=你的SUB值;
    ```
 3. 填入 `.env` 中的 `WEIBO_COOKIE`（用于解决机房 IP 访客限制或提取粉丝可见博文/高码率视频）。
+
+### 3.8 知乎 (`ZHIHU_COOKIE`)
+1. 访问 [知乎网页版 (zhihu.com)](https://www.zhihu.com/) 并登录账号。
+2. 按 `F12` 打开开发者工具，在 **Application -> Cookies -> https://www.zhihu.com** 中提取：
+   ```text
+   d_c0=你的d_c0值; z_c0=你的z_c0值;
+   ```
+3. 填入后台「系统设置」→「平台 Cookie 凭据覆盖配置」或 `.env` 中的 `ZHIHU_COOKIE`（用于解决机房云服务器 IP 遭遇的 40362 风控拦截或提取登录可见专栏文章）。
 
 ---
 

@@ -12,6 +12,7 @@ PLATFORM_COOKIE_ALIASES = {
     "jimeng": ["JIMENG_COOKIE"],
     "weibo": ["WEIBO_COOKIE"],
     "kuaishou": ["KUAISHOU_COOKIE", "KS_COOKIE"],
+    "zhihu": ["ZHIHU_COOKIE"],
 }
 
 

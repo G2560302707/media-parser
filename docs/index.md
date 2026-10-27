@@ -44,7 +44,7 @@
 | 11 | **小云雀 AI** | AI 图文 / 图像 | ✅ 支持 | 🟢 免配置 | 剪映小云雀分享端 | [查看指南](parsers/xiaoyunque.md) |
 | 12 | **腾讯元宝** | AI 生图 / 图片编辑 / AI 视频 | ⚠️ 含原生水印 | 🟢 公开分享免配置 | Next.js SSR 对话数据提取 | [查看指南](parsers/yuanbao.md) |
 | 13 | **微博** | 视频 / 直播回放 / 微博正文 / 多图 | ✅ 支持 | 🟢 免配置 (可选 Cookie 防风控) | 移动端 H5 接口 + 直播组件 + Base62 解码 | [查看指南](parsers/weibo.md) |
-| 14 | **知乎** | 视频 (Video Pin) / 想法 / 问答 | ✅ 支持 | 🟢 免配置 | Web API 多路由正则提取 | [查看指南](parsers/zhihu.md) |
+| 14 | **知乎** | 专栏文章 / 视频 (Video Pin) / 想法 / 问答 | ✅ 支持 | 🟢 免配置 (可选 Cookie 防风控) | Web API 多路由正则提取 + SSR 容灾兜底 | [查看指南](parsers/zhihu.md) |
 | 15 | **皮皮虾** | 视频 / 图文 | ✅ 支持 | 🟢 免配置 | H5 接口数据解析 | [查看指南](parsers/pipixia.md) |
 | 16 | **皮皮搞笑** | 视频 / 图集 | ✅ 支持 | 🟢 免配置 | H5 分享接口解析 | [查看指南](parsers/pipigaoxiao.md) |
 | 17 | **最右** | 视频 / 图集 | ✅ 支持 | 🟢 免配置 | H5 接口键值映射提取 | [查看指南](parsers/zuiyou.md) |
