@@ -3,6 +3,16 @@ chcp 65001
 title Cookie 采集同步工具
 cd /d "%~dp0"
 
+rem ---- 必须与 cookie_collector.py 同目录（随项目 scripts 目录一起存放）
+if not exist "cookie_collector.py" (
+    echo [x] 未找到 cookie_collector.py。
+    echo     本 bat 必须放在项目的 scripts 目录内、与 cookie_collector.py 同目录使用，
+    echo     不能单独复制到别处运行。
+    echo     项目位置: ParsingTool\media-parser\scripts\r
+    pause
+    exit /b 1
+)
+
 rem ---- 找 Python：先用现成的 python 真跑一次，不行再找 py 启动器
 set "PY=python"
 python -c "import sys" || (
