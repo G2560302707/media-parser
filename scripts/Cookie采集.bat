@@ -32,10 +32,10 @@ if not exist "%VENV%\Scripts\python.exe" (
 )
 
 rem ---- 依赖自愈: 缺什么补什么, 已有环境也能修复
-"%VENV%\Scripts\python.exe" -c "import playwright, requests, flask" || (
+"%VENV%\Scripts\python.exe" -c "import playwright, requests, flask, tzdata" || (
     echo [依赖检查] 补全安装中, 约 2-5 分钟...
     "%VENV%\Scripts\python.exe" -m pip install -q --upgrade pip
-    "%VENV%\Scripts\python.exe" -m pip install -q playwright requests flask
+    "%VENV%\Scripts\python.exe" -m pip install -q playwright requests flask tzdata
     "%VENV%\Scripts\python.exe" -m playwright install chromium
     if errorlevel 1 (
         echo [x] 依赖安装失败, 请检查网络后重新运行本脚本
