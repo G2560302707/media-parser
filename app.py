@@ -71,6 +71,8 @@ def create_app(config=None):
     app.extensions["proxy_manager"] = manager
     if not app.testing:
         manager.start()
+        from src.utils.cookie_registry import start_auto_inspector
+        start_auto_inspector()
 
     # 注册蓝图
     app.register_blueprint(api_bp, url_prefix='/api')
