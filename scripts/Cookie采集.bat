@@ -1,48 +1,51 @@
 @echo off
-chcp 65001
-title Cookie é‡‡é›†åŒæ­¥å·¥å…·
+title Cookie ²É¼¯Í¬²½¹¤¾ß
 cd /d "%~dp0"
 
-rem ---- å¿…é¡»ä¸ cookie_collector.py åŒç›®å½•ï¼ˆéšé¡¹ç›® scripts ç›®å½•ä¸€èµ·å­˜æ”¾ï¼‰
+rem ---- ±ØĞëÓë cookie_collector.py Í¬Ä¿Â¼£¨ËæÏîÄ¿ scripts Ä¿Â¼Ò»Æğ´æ·Å£©
 if not exist "cookie_collector.py" (
-    echo [x] æœªæ‰¾åˆ° cookie_collector.pyã€‚
-    echo     æœ¬ bat å¿…é¡»æ”¾åœ¨é¡¹ç›®çš„ scripts ç›®å½•å†…ã€ä¸ cookie_collector.py åŒç›®å½•ä½¿ç”¨ï¼Œ
-    echo     ä¸èƒ½å•ç‹¬å¤åˆ¶åˆ°åˆ«å¤„è¿è¡Œã€‚
-    echo     é¡¹ç›®ä½ç½®: ParsingTool\media-parser\scripts\r
+    echo [x] Î´ÕÒµ½ cookie_collector.py
+    echo     ±¾ bat ±ØĞë·ÅÔÚÏîÄ¿µÄ scripts Ä¿Â¼ÄÚ¡¢Óë cookie_collector.py Í¬Ä¿Â¼Ê¹ÓÃ
+    echo     ²»ÄÜµ¥¶À¸´ÖÆµ½±ğ´¦ÔËĞĞ
+    echo     ÏîÄ¿Î»ÖÃ: ParsingTool\media-parser\scripts\
     pause
     exit /b 1
 )
 
-rem ---- æ‰¾ Pythonï¼šå…ˆç”¨ç°æˆçš„ python çœŸè·‘ä¸€æ¬¡ï¼Œä¸è¡Œå†æ‰¾ py å¯åŠ¨å™¨
+rem ---- ÕÒ Python: ÏÈÓÃÏÖ³ÉµÄ python ÕæÅÜÒ»´Î, ²»ĞĞÔÙÕÒ py Æô¶¯Æ÷
 set "PY=python"
 python -c "import sys" || (
     set "PY="
     where py && set "PY=py -3"
 )
 if not defined PY (
-    echo [x] æœªæ£€æµ‹åˆ°å¯ç”¨çš„ Pythonã€‚è¯·å®‰è£… Python 3.10+: https://www.python.org/downloads/
-    echo     å®‰è£…æ—¶å‹¾é€‰ "Add Python to PATH"ï¼Œç„¶åé‡æ–°è¿è¡Œæœ¬è„šæœ¬ã€‚
+    echo [x] Î´¼ì²âµ½¿ÉÓÃµÄ Python, Çë°²×° Python 3.10+ ²¢¹´Ñ¡ Add Python to PATH
     pause
     exit /b 1
 )
 
-rem ---- é¦–æ¬¡è¿è¡Œï¼šå»ºç‹¬ç«‹è™šæ‹Ÿç¯å¢ƒï¼ˆä¸æ±¡æŸ“ç³»ç»Ÿ Pythonï¼‰
+rem ---- Ê×´ÎÔËĞĞ: ½¨¶ÀÁ¢ĞéÄâ»·¾³
 set "VENV=..\data\.venv_collector"
 if not exist "%VENV%\Scripts\python.exe" (
-    echo [é¦–æ¬¡è¿è¡Œ] åˆ›å»ºç‹¬ç«‹ç¯å¢ƒå¹¶å®‰è£…ä¾èµ–ï¼ˆçº¦ 2-5 åˆ†é’Ÿï¼Œå–å†³äºç½‘é€Ÿï¼‰...
+    echo [Ê×´ÎÔËĞĞ] ´´½¨¶ÀÁ¢»·¾³...
     %PY% -m venv "%VENV%"
+)
+
+rem ---- ÒÀÀµ×ÔÓú: È±Ê²Ã´²¹Ê²Ã´, ÒÑÓĞ»·¾³Ò²ÄÜĞŞ¸´
+"%VENV%\Scripts\python.exe" -c "import playwright, requests, flask" || (
+    echo [ÒÀÀµ¼ì²é] ²¹È«°²×°ÖĞ, Ô¼ 2-5 ·ÖÖÓ...
     "%VENV%\Scripts\python.exe" -m pip install -q --upgrade pip
-    "%VENV%\Scripts\python.exe" -m pip install -q playwright requests
+    "%VENV%\Scripts\python.exe" -m pip install -q playwright requests flask
     "%VENV%\Scripts\python.exe" -m playwright install chromium
     if errorlevel 1 (
-        echo [x] ä¾èµ–å®‰è£…å¤±è´¥ï¼Œè¯·æ£€æŸ¥ç½‘ç»œåé‡æ–°è¿è¡Œæœ¬è„šæœ¬ã€‚
+        echo [x] ÒÀÀµ°²×°Ê§°Ü, Çë¼ì²éÍøÂçºóÖØĞÂÔËĞĞ±¾½Å±¾
         pause
         exit /b 1
     )
 )
-echo [âˆš] ç¯å¢ƒå°±ç»ªï¼Œå¯åŠ¨é‡‡é›†å™¨...
+echo [¡Ì] »·¾³¾ÍĞ÷, Æô¶¯²É¼¯Æ÷...
 
-rem ---- è¿è¡Œé‡‡é›†å™¨ï¼ˆå‚æ•°åŸæ ·é€ä¼ ï¼Œæ”¯æŒ -p douyin --push ç­‰ï¼‰
+rem ---- ÔËĞĞ²É¼¯Æ÷ (²ÎÊıÔ­ÑùÍ¸´«, Ö§³Ö -p douyin --push µÈ)
 "%VENV%\Scripts\python.exe" cookie_collector.py %*
 echo.
 pause
