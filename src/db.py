@@ -50,6 +50,17 @@ CREATE TABLE IF NOT EXISTS request_logs (
     input_url TEXT,
     created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS cookie_probe_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    platform_key TEXT NOT NULL,
+    status TEXT NOT NULL,
+    trigger_type TEXT NOT NULL DEFAULT 'manual',
+    detail TEXT,
+    duration_ms INTEGER,
+    probed_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_probe_platform_time
+    ON cookie_probe_records(platform_key, probed_at DESC);
 CREATE TABLE IF NOT EXISTS rate_limit_buckets (
     subject TEXT NOT NULL,
     bucket_second INTEGER NOT NULL,
