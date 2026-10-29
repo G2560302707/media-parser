@@ -116,7 +116,7 @@ Media-Parser是一款专为短视频创作者与开发者打造的**100%原生�
 
 ```bash
 # 1. 获取源码
-git clone https://github.com/ucmao/media-parser.git
+git clone https://github.com/G2560302707/media-parser.git
 cd media-parser
 
 # 2. （可选）配置环境变量与平台 Cookie
@@ -227,7 +227,7 @@ curl 'http://localhost:8051/api/v1/parse?key=mp-xxx&url=https://v.douyin.com/xxx
 
 默认响应还会附带可由管理员配置或关闭的 `_tip` 服务信息字段。
 
-> **接口说明**：标准对接建议统一使用 `/api/v1/parse`。在运营模式下，`/api/parse` 仅供网站首页在线体验（受 IP 频控限制）；在微服务模式下，`/api/v1/parse` 与 `/api/parse` 均为完全免鉴权的解析接口。
+> **接口说明**：标准对接建议统一使用 `/api/v1/parse`。运营模式下首页 `/api/parse` 与正式接口一样需要 API Key（或已登录会话），会计入积分，禁止匿名调用；微服务模式 `API_ONLY=true` 下两者均免鉴权。
 
 ---
 
@@ -251,10 +251,17 @@ python3 tests/manual_verify_parsers.py --platform "小云雀AI"
 
 如果您在安装、使用过程中遇到问题，或有定制需求，请通过以下方式联系：
 
-* **微信**：csdnxr
-* **QQ**：294323976
-* **邮箱**：leoucmao@gmail.com
-* **Bug反馈**：[GitHub Issues](https://github.com/ucmao/media-parser/issues)
+* **QQ**：2560302707
+* **邮箱**：[guo2560302707@gmail.com](mailto:guo2560302707@gmail.com)
+* **问题反馈**：[guo2560302707@gmail.com](mailto:guo2560302707@gmail.com)
+
+源码：[https://github.com/G2560302707/media-parser/tree/main](https://github.com/G2560302707/media-parser/tree/main)
+
+---
+
+## 🙏 致谢
+
+本项目基于 [ucmao / media-parser](https://github.com/ucmao/media-parser) 开源。解析引擎、接口约定与项目骨架均出自原作者，向 ucmao 致谢。
 
 ---
 

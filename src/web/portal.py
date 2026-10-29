@@ -6,7 +6,14 @@ from zoneinfo import ZoneInfo
 from flask import Blueprint, Response, flash, g, redirect, render_template, request, session, url_for
 
 from configs.general_constants import DOMAIN_TO_NAME
-from src.auth import csrf_protected, format_log_time, generate_api_key, hash_api_key, login_required, user_is_expired
+from src.auth import (
+    SHORTCUT_KEY_NAME,
+    csrf_protected,
+    format_log_time,
+    issue_api_key,
+    login_required,
+    user_is_expired,
+)
 from src.db import get_daily_trend, get_db, get_platform_distribution, get_top_keys, utcnow
 from src.utils.table_query import paginate_memory_list, query_paginated_table
 
@@ -36,6 +43,32 @@ def _parse_shanghai_to_utc_iso(val: str, is_end: bool = False) -> str | None:
         except ValueError:
             return None
     return None
+
+
+# ----------------------------------------------------------------------
+# 0. 注册欢迎（给新用户直接复制密钥）
+# ----------------------------------------------------------------------
+
+@bp.get("/welcome")
+@login_required
+def welcome():
+    raw_key = session.pop("new_api_key", None)
+    if not raw_key:
+        db = get_db()
+        row = db.execute(
+            "SELECT key FROM api_keys WHERE user_id=? "
+            "ORDER BY CASE name WHEN ? THEN 0 ELSE 1 END, id DESC LIMIT 1",
+            (g.user["id"], SHORTCUT_KEY_NAME),
+        ).fetchone()
+        if row:
+            raw_key = row["key"]
+        elif not user_is_expired(g.user):
+            raw_key = issue_api_key(g.user["id"])
+    return render_template(
+        "portal/welcome.html",
+        api_key=raw_key,
+        from_shortcut=request.args.get("from") == "shortcut",
+    )
 
 
 # ----------------------------------------------------------------------
@@ -211,19 +244,10 @@ def create_key():
         flash("账号尚未开通或已到期，不能创建密钥", "error")
         return redirect(url_for("portal.keys"))
     name = request.form.get("name", "").strip()[:40] or "默认密钥"
-    count = get_db().execute(
-        "SELECT COUNT(*) count FROM api_keys WHERE user_id=?", (g.user["id"],)
-    ).fetchone()["count"]
-    if count >= 10:
+    raw_key = issue_api_key(g.user["id"], name)
+    if not raw_key:
         flash("每个账号最多创建 10 个密钥", "error")
         return redirect(url_for("portal.keys"))
-    raw_key = generate_api_key()
-    db = get_db()
-    db.execute(
-        "INSERT INTO api_keys(user_id, name, key, created_at) VALUES(?,?,?,?)",
-        (g.user["id"], name, raw_key, utcnow()),
-    )
-    db.commit()
     session["new_api_key"] = raw_key
     flash("密钥创建成功！您可在列表中点击“小眼睛”或“一键复制”随时使用。", "success")
     return redirect(url_for("portal.keys"))

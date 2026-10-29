@@ -11,9 +11,7 @@ from src.api.response import make_response
 from src.db import refund_user_credit, reserve_user_credit
 from src.api.access import (
     authenticate_api_key,
-    consume_rate_limit,
-    demo_enabled,
-    get_client_ip,
+    authenticate_web_parse,
     global_api_enabled,
     platform_access,
     record_request,
@@ -37,18 +35,19 @@ def parse():
         return make_response(503, 'API 服务已暂停', None, False, 'API_DISABLED'), 503
     is_api_only = bool(current_app and current_app.config.get('API_ONLY'))
     if not is_api_only:
-        if not demo_enabled():
-            return make_response(403, '在线体验暂未开放', None, False, 'DEMO_DISABLED'), 403
         data = request.get_json(silent=True)
         if not isinstance(data, dict):
             return make_response(400, '请求体必须是 JSON 对象', None, False, 'INVALID_REQUEST'), 400
         if data.get('website'):
             return make_response(400, '非法请求', None, False, 'INVALID_REQUEST'), 400
+        access = None
+        # 单测仍走解析契约；生产环境必须登录或携带 API Key，禁止匿名白嫖。
         if not (current_app and current_app.testing):
-            client_ip = get_client_ip()
-            if not consume_rate_limit(f"demo_ip:{client_ip}", 5, window_seconds=60):
-                return make_response(429, '体验解析过于频繁，请 1 分钟后再试', None, False, 'RATE_LIMITED'), 429
-        return _execute_parse(data.get('text') or data.get('url'), None)
+            access, error = authenticate_web_parse()
+            if error:
+                status, message, code = error
+                return make_response(status, message, None, False, code), status
+        return _execute_parse(data.get('text') or data.get('url'), access)
 
     # API_ONLY 模式：完全无限制，支持 GET/POST (JSON/Form/Query)
     text = None
@@ -375,7 +374,8 @@ def _resolve_and_fetch(share_url, before_parse, deadline):
                     if not using_proxy and manager.active(platform):
                         using_proxy = True
                         continue
-                    parser = ParserFactory.create_parser(platform, UrlParser.extract_video_address(redirect_url))
+                    address = UrlParser.extract_video_address(redirect_url)
+                    parser = ParserFactory.create_parser(platform, address)
                     attempt.check()
                     data = _fetch_with_retry(parser, platform)
                     attempt.check()

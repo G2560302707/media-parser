@@ -2,6 +2,8 @@
 {% macro icon(name, class_name='w-4 h-4') -%}
 <svg class="{{ class_name }}" aria-hidden="true" focusable="false"><use href="{{ url_for('static', filename='icons.svg') }}#icon-{{ name }}"></use></svg>
 {%- endmacro %}
+{% set github_repo = 'https://github.com/G2560302707/media-parser/tree/main' %}
+{% set github_origin = 'https://github.com/ucmao/media-parser' %}
 <html lang="zh-CN" class="scroll-smooth">
 <head>
     <meta charset="utf-8">
@@ -34,9 +36,9 @@
     <header class="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
         <div class="max-w-7xl mx-auto min-h-16 px-5 sm:px-8 py-3 flex items-center justify-between gap-4">
             <a href="#top" class="flex items-center gap-3 shrink-0" aria-label="Media Parser 首页"><img src="{{ url_for('static', filename='images/logo-web.png') }}" alt="" class="w-9 h-9 rounded-xl border border-slate-200 bg-white p-1"><span class="hidden sm:inline font-bold tracking-tight text-slate-950">Media Parser <span class="text-brand">API</span></span></a>
-            <nav class="hidden lg:flex items-center gap-8 text-sm text-slate-600"><a href="#parser" class="hover:text-brand">在线解析</a><a href="#capabilities" class="hover:text-brand">平台能力</a><a href="#deployment" class="hover:text-brand">部署方式</a><a href="#docs" class="hover:text-brand">接入示例</a><a href="#faq" class="hover:text-brand">常见问题</a></nav>
+            <nav class="hidden lg:flex items-center gap-8 text-sm text-slate-600"><a href="#parser" class="hover:text-brand">在线解析</a><a href="{{ url_for('web.shortcut_guide') }}" class="hover:text-brand">快捷指令</a><a href="#capabilities" class="hover:text-brand">平台能力</a><a href="#deployment" class="hover:text-brand">部署方式</a><a href="#docs" class="hover:text-brand">接入示例</a><a href="#faq" class="hover:text-brand">常见问题</a><a href="#contact" class="hover:text-brand">联系</a></nav>
             <div class="flex items-center gap-2 sm:gap-3">
-                <a href="https://github.com/ucmao/media-parser" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看 Media Parser 源码" title="GitHub 开源仓库" class="inline-flex h-9 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition shadow-sm">
+                <a href="{{ github_repo }}" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看 Media Parser 源码" title="GitHub 开源仓库" class="inline-flex h-9 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition shadow-sm">
                     <svg viewBox="0 0 24 24" aria-hidden="true" class="w-4 h-4 fill-slate-900"><path d="M12 .7a11.5 11.5 0 0 0-3.64 22.4c.58.1.79-.25.79-.56v-2.23c-3.22.7-3.9-1.37-3.9-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.74-1.55-2.57-.3-5.27-1.29-5.27-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.16 1.18a10.9 10.9 0 0 1 5.76 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.71 5.39-5.29 5.68.42.36.79 1.07.79 2.16v3.2c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z"/></svg>
                     <span id="navStarBadge" class="hidden items-center gap-2">
                         <span class="w-px h-3.5 bg-slate-200"></span>
@@ -55,7 +57,7 @@
             <div class="grid lg:grid-cols-[1.05fr_.95fr] gap-12 lg:gap-16 items-center">
                 <div>
                     <div class="flex flex-wrap items-center gap-3">
-                        <a href="https://github.com/ucmao/media-parser" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 transition">
+                        <a href="{{ github_repo }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 transition">
                             <svg viewBox="0 0 24 24" aria-hidden="true" class="w-4 h-4 fill-slate-900"><path d="M12 .7a11.5 11.5 0 0 0-3.64 22.4c.58.1.79-.25.79-.56v-2.23c-3.22.7-3.9-1.37-3.9-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.74-1.55-2.57-.3-5.27-1.29-5.27-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.16 1.18a10.9 10.9 0 0 1 5.76 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.71 5.39-5.29 5.68.42.36.79 1.07.79 2.16v3.2c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z"/></svg>
                             <span>Star on GitHub</span>
                             <span id="starCountBadge" class="hidden items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
@@ -66,7 +68,7 @@
                     </div>
                     <h1 class="mt-7 text-4xl sm:text-5xl lg:text-6xl leading-[1.1] font-black tracking-[-.045em] text-slate-950">多平台媒体解析，<br><span class="text-brand">一个接口就够了。</span></h1>
                     <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-600">输入任意支持平台的分享链接，统一获取视频、图集、封面、音频与作者信息。无需浏览器环境，既可在线使用，也可通过 API 接入你的业务。</p>
-                    <div class="mt-8 flex flex-wrap items-center gap-4"><a href="#parser" class="rounded-xl bg-brand px-6 py-3 font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">立即在线解析</a><a href="#docs" class="rounded-xl border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-800 hover:border-indigo-300 hover:text-brand transition">查看 API 示例</a></div>
+                    <div class="mt-8 flex flex-wrap items-center gap-4"><a href="#parser" class="rounded-xl bg-brand px-6 py-3 font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">立即在线解析</a><a href="{{ url_for('web.shortcut_guide') }}" class="rounded-xl border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-800 hover:border-indigo-300 hover:text-brand transition">iPhone 快捷指令</a><a href="#docs" class="text-sm font-semibold text-slate-500 hover:text-brand">查看 API 示例</a></div>
                     <div class="mt-9 flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-500"><span class="inline-flex items-center gap-1.5">{{ icon('check', 'w-4 h-4 text-emerald-500') }}统一 JSON 返回</span><span class="inline-flex items-center gap-1.5">{{ icon('check', 'w-4 h-4 text-emerald-500') }}API Key 鉴权</span><span class="inline-flex items-center gap-1.5">{{ icon('check', 'w-4 h-4 text-emerald-500') }}独立 QPS 限制</span></div>
                 </div>
                 <div class="code-shadow rounded-2xl overflow-hidden border border-slate-200 bg-white">
@@ -76,7 +78,7 @@
             </div>
         </section>
         <section id="parser" class="border-y border-slate-200 bg-slate-50/80"><div class="max-w-5xl mx-auto px-5 sm:px-8 py-16 sm:py-20">
-            <div class="max-w-2xl"><p class="font-mono text-sm font-semibold text-brand">LIVE PARSER</p><h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-slate-950">粘贴链接，立即解析</h2><p class="mt-3 text-slate-600 text-base leading-7">支持分享短链和包含链接的完整分享文案。</p></div>
+            <div class="max-w-2xl"><p class="font-mono text-sm font-semibold text-brand">LIVE PARSER</p><h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-slate-950">粘贴链接，登录后解析</h2><p class="mt-3 text-slate-600 text-base leading-7">必须携带 API 密钥或已登录账号，每次解析扣除积分。匿名访客不能调用。</p></div>
             <div class="mt-8 rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-sm">
                 {% if not parser_enabled %}
                 <div class="mb-4 rounded-xl border border-amber-200/70 bg-amber-50/50 px-4 py-3 text-xs sm:text-sm text-amber-900 flex items-center gap-2.5">
@@ -87,6 +89,24 @@
                 <label for="parseUrl" class="sr-only">媒体分享链接</label>
                 <input type="text" id="hpWebsite" name="website" style="display:none !important; opacity:0; position:absolute; left:-9999px" tabindex="-1" autocomplete="off">
                 <textarea id="parseUrl" rows="3" maxlength="2000" {{ 'disabled' if not parser_enabled }} placeholder="{{ '粘贴抖音、快手、小红书、B站等平台的分享链接或文案' if parser_enabled else '在线解析体验当前处于维护状态，暂时无法提交…' }}" class="w-full resize-none rounded-xl border border-slate-200 {{ 'bg-slate-100/70 text-slate-400 placeholder:text-slate-400/80 cursor-not-allowed' if not parser_enabled else 'bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10' }} px-4 py-3.5 text-sm sm:text-base leading-relaxed outline-none transition-all"></textarea>
+                {% if parser_enabled %}
+                <div id="parseAuthGate" class="mt-4 rounded-xl border border-amber-200/80 bg-amber-50/80 px-4 py-3.5 {% if logged_in %}hidden{% endif %}">
+                    <p class="text-sm font-semibold text-amber-950">解析需要密钥，匿名无法调用。</p>
+                    <p class="mt-1 text-xs leading-5 text-amber-800">注册会自动生成密钥并赠送试用积分。已有账号请登录，或粘贴已有密钥。</p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        {% if registration_enabled %}
+                        <a href="{{ url_for('auth.register') }}" class="h-9 px-3.5 inline-flex items-center rounded-lg bg-brand text-xs font-bold text-white hover:bg-indigo-700 transition">去注册</a>
+                        {% endif %}
+                        <a href="{{ url_for('auth.login') }}" class="h-9 px-3.5 inline-flex items-center rounded-lg border border-amber-200 bg-white text-xs font-semibold text-slate-800 hover:border-indigo-300 hover:text-brand transition">登录</a>
+                        <button type="button" id="showLandingKeyBtn" class="h-9 px-3.5 rounded-lg text-xs font-semibold text-brand hover:bg-white/70 transition">我有密钥</button>
+                    </div>
+                    <div id="landingKeyRow" class="hidden mt-3 flex gap-2">
+                        <input id="landingKeyInput" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="mp- 开头的 24 位密钥" class="flex-1 min-w-0 px-3 py-2 text-sm font-mono rounded-lg border border-amber-200 bg-white">
+                        <button type="button" id="saveLandingKeyBtn" class="shrink-0 h-10 px-3 rounded-lg bg-brand text-xs font-bold text-white">保存</button>
+                    </div>
+                </div>
+                <p id="parseAuthOk" class="hidden mt-3 text-xs text-slate-500">已验证身份，本次解析将扣除账号积分。</p>
+                {% endif %}
                 <div class="mt-4 flex flex-col sm:flex-row gap-2.5 sm:gap-3">
                     {% if parser_enabled %}
                     <button id="parseBtn" onclick="handleParse()" class="inline-flex items-center justify-center rounded-xl bg-brand px-6 py-2.5 font-semibold text-sm text-white shadow-sm shadow-indigo-500/25 hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all">开始解析</button>
@@ -276,7 +296,7 @@
                                 <li class="flex items-center gap-3"><svg class="w-4 h-4 text-emerald-500 shrink-0 fill-current" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg><span>透明无暗桩，通过 GitHub 社区交流</span></li>
                             </ul>
                         </div>
-                        <a href="https://github.com/ucmao/media-parser" target="_blank" rel="noopener noreferrer" class="mt-8 w-full block text-center rounded-xl border border-slate-300 bg-white py-3 px-4 font-bold text-slate-800 hover:border-brand hover:text-brand transition">查看源码与部署文档</a>
+                        <a href="{{ github_repo }}" target="_blank" rel="noopener noreferrer" class="mt-8 w-full block text-center rounded-xl border border-slate-300 bg-white py-3 px-4 font-bold text-slate-800 hover:border-brand hover:text-brand transition">查看源码与部署文档</a>
                     </div>
 
                     <!-- 团队与私有中台 -->
@@ -316,7 +336,7 @@
                                 <li class="flex items-center gap-3"><svg class="w-4 h-4 text-emerald-500 shrink-0 fill-current" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg><span>自主把握频次，严格遵守目标平台使用规则</span></li>
                             </ul>
                         </div>
-                        <a href="https://github.com/ucmao/media-parser#%EF%B8%8F-%E5%BC%80%E6%BA%90%E5%8D%8F%E8%AE%AE--%E5%85%8D%E8%B4%A3%E5%A3%B0%E6%98%8E" target="_blank" rel="noopener noreferrer" class="mt-8 w-full block text-center rounded-xl border border-slate-300 bg-white py-3 px-4 font-bold text-slate-800 hover:border-slate-400 transition">查看开源协议与合规须知</a>
+                        <a href="{{ github_repo }}#-项目原则与免责声明" target="_blank" rel="noopener noreferrer" class="mt-8 w-full block text-center rounded-xl border border-slate-300 bg-white py-3 px-4 font-bold text-slate-800 hover:border-slate-400 transition">查看开源协议与合规须知</a>
                     </div>
                 </div>
             </div>
@@ -335,6 +355,18 @@
 
                 <div class="space-y-4">
                     <details class="group rounded-2xl border border-slate-200 bg-slate-50/50 p-6 [&_summary::-webkit-details-marker]:hidden transition-all duration-200 hover:border-indigo-200 hover:bg-white" open>
+                        <summary class="flex items-center justify-between cursor-pointer font-bold text-slate-900 text-lg">
+                            <span>iPhone 上怎么用？要自己配密钥吗？</span>
+                            <span class="ml-4 shrink-0 rounded-full bg-slate-100 p-1.5 text-slate-500 group-open:-rotate-180 group-open:bg-indigo-50 group-open:text-brand transition-all duration-200">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </span>
+                        </summary>
+                        <p class="mt-4 text-slate-600 leading-7 text-sm sm:text-base border-t border-slate-100 pt-4">
+                            打开 <a href="{{ url_for('web.shortcut_guide') }}" class="text-brand font-semibold hover:underline">快捷指令说明页</a>，按「安装 → 注册 → 分享」三步即可。注册会自动生成密钥，不必再进控制台手动创建。调用必须带密钥，目前没有付费步骤。
+                        </p>
+                    </details>
+
+                    <details class="group rounded-2xl border border-slate-200 bg-slate-50/50 p-6 [&_summary::-webkit-details-marker]:hidden transition-all duration-200 hover:border-indigo-200 hover:bg-white">
                         <summary class="flex items-center justify-between cursor-pointer font-bold text-slate-900 text-lg">
                             <span>解析出来的视频和图集是高清无水印的吗？</span>
                             <span class="ml-4 shrink-0 rounded-full bg-slate-100 p-1.5 text-slate-500 group-open:-rotate-180 group-open:bg-indigo-50 group-open:text-brand transition-all duration-200">
@@ -366,7 +398,7 @@
                             </span>
                         </summary>
                         <p class="mt-4 text-slate-600 leading-7 text-sm sm:text-base border-t border-slate-100 pt-4">
-                            请先更新到项目最新版本，并检查该平台是否需要 Cookie 等额外配置。如果问题仍然存在，可携带脱敏后的示例链接和错误日志提交 GitHub Issue。开源自部署实例不会自动热更新，升级前请先在自己的环境中验证。
+                            请先更新到项目最新版本，并检查该平台是否需要 Cookie 等额外配置。如果问题仍然存在，可把脱敏后的示例链接和错误日志发到 <a href="mailto:guo2560302707@gmail.com" class="text-brand font-semibold hover:underline">guo2560302707@gmail.com</a>。开源自部署实例不会自动热更新，升级前请先在自己的环境中验证。
                         </p>
                     </details>
 
@@ -396,6 +428,52 @@
                 </div>
             </div>
         </section>
+
+    <section id="contact" class="border-t border-slate-200 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-5 sm:px-8 py-20">
+            <div class="max-w-2xl">
+                <p class="font-mono text-sm font-semibold text-brand">GET IN TOUCH</p>
+                <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-slate-950">有问题直接找我。</h2>
+                <p class="mt-4 text-slate-600 leading-7">安装、使用或定制都可以。QQ 和邮件都能通，问题反馈请发同一邮箱。</p>
+            </div>
+
+            <div class="mt-10 rounded-2xl overflow-hidden border border-slate-200 bg-white">
+                <div class="grid sm:grid-cols-3">
+                    <div class="flex items-center justify-between gap-4 px-6 py-5 sm:px-7 sm:border-r border-b sm:border-b-0 border-slate-200">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold tracking-wide text-slate-500">QQ</p>
+                            <p class="mt-1 font-mono text-sm font-semibold text-slate-950 select-all">2560302707</p>
+                        </div>
+                        <button type="button" data-copy="2560302707" class="shrink-0 w-[4.25rem] h-9 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:border-indigo-300 hover:text-brand transition">复制</button>
+                    </div>
+                    <div class="flex items-center justify-between gap-4 px-6 py-5 sm:px-7 sm:border-r border-b sm:border-b-0 border-slate-200">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold tracking-wide text-slate-500">邮箱</p>
+                            <a href="mailto:guo2560302707@gmail.com" class="mt-1 block font-mono text-sm font-semibold text-slate-950 break-all hover:text-brand">guo2560302707@gmail.com</a>
+                        </div>
+                        <a href="mailto:guo2560302707@gmail.com" class="shrink-0 w-[4.25rem] h-9 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:border-indigo-300 hover:text-brand transition">写信</a>
+                    </div>
+                    <div class="flex items-center justify-between gap-4 px-6 py-5 sm:px-7">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold tracking-wide text-slate-500">问题反馈</p>
+                            <a href="mailto:guo2560302707@gmail.com?subject=Media%20Parser%20问题反馈" class="mt-1 block font-mono text-sm font-semibold text-slate-950 truncate hover:text-brand">同一邮箱</a>
+                        </div>
+                        <a href="mailto:guo2560302707@gmail.com?subject=Media%20Parser%20问题反馈" class="shrink-0 w-[4.25rem] h-9 inline-flex items-center justify-center rounded-lg bg-brand text-xs font-bold text-white hover:bg-indigo-700 transition">反馈</a>
+                    </div>
+                </div>
+                <aside class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 px-6 py-5 sm:px-7 bg-slate-950 text-slate-100">
+                    <div class="min-w-0 sm:flex-1">
+                        <p class="text-xs font-semibold tracking-[0.18em] uppercase text-indigo-300">致谢</p>
+                        <p class="mt-1.5 text-sm sm:text-[15px] leading-6 text-slate-200">解析引擎来自 <a href="{{ github_origin }}" target="_blank" rel="noopener noreferrer" class="font-semibold text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">ucmao</a> 的开源项目，向原作者致谢。</p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <a href="{{ github_origin }}" target="_blank" rel="noopener noreferrer" class="h-9 px-3.5 inline-flex items-center rounded-lg bg-white text-xs font-semibold text-slate-950 hover:bg-indigo-50 transition">原作者仓库</a>
+                        <a href="{{ github_repo }}" target="_blank" rel="noopener noreferrer" class="h-9 px-3.5 inline-flex items-center rounded-lg border border-white/20 text-xs font-semibold text-slate-100 hover:border-indigo-300 hover:text-white transition">本站源码</a>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </section>
     </main>
     <!-- 浮动气泡提示容器 (Landing Toast Notification) -->
     <div id="landingToastContainer" class="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2.5 pointer-events-none w-auto max-w-[90vw]"></div>
@@ -404,14 +482,15 @@
         <div class="max-w-7xl mx-auto px-5 sm:px-8 py-8 flex flex-col sm:flex-row gap-4 justify-between items-center text-sm text-slate-500">
             <div class="flex items-center gap-3">
                 <img src="{{ url_for('static', filename='images/logo-web.png') }}" alt="" class="w-7 h-7 rounded-lg border border-slate-200 bg-white p-1">
-                <span>Media Parser API · 多平台媒体解析服务</span>
+                <span>Media Parser API · 基于 ucmao 开源项目维护</span>
             </div>
             <div class="flex items-center gap-6">
                 <span class="inline-flex items-center gap-2 text-slate-500 select-none">
                     <span class="w-2 h-2 rounded-full {{ 'bg-emerald-500' if api_enabled else 'bg-amber-500' }}"></span>
                     <span>{{ '系统正常运行' if api_enabled else '系统维护中' }}</span>
                 </span>
-                <a class="hover:text-brand transition" href="https://github.com/ucmao/media-parser" target="_blank" rel="noopener noreferrer">GitHub</a>
+                <a class="hover:text-brand transition" href="{{ github_repo }}" target="_blank" rel="noopener noreferrer">GitHub</a>
+                <a class="hover:text-brand transition" href="{{ github_origin }}" target="_blank" rel="noopener noreferrer">原作者</a>
             </div>
         </div>
     </footer>
@@ -1083,19 +1162,43 @@
                 };
             }
 
-            // 4. 频率与服务状态
+            // 4. 鉴权、积分、频率与服务状态
+            if (code === 'API_KEY_REQUIRED' || code === 'INVALID_API_KEY') {
+                return {
+                    title: '需要 API 密钥',
+                    message: '首页解析必须登录或提供有效密钥，匿名请求不会被处理。',
+                    hint: '请先注册获取密钥，或点击「我有密钥」粘贴后重试。',
+                    tag: '需要鉴权'
+                };
+            }
+            if (code === 'INSUFFICIENT_CREDITS') {
+                return {
+                    title: '积分已用尽',
+                    message: '当前账号的解析积分已耗尽，暂时无法继续解析。',
+                    hint: '请联系管理员充值后再试。',
+                    tag: '积分不足'
+                };
+            }
+            if (code === 'ACCOUNT_EXPIRED' || code === 'API_KEY_DISABLED') {
+                return {
+                    title: '账号不可用',
+                    message: rawDesc || '当前账号尚未开通、已到期或已停用。',
+                    hint: '请联系管理员开通或续期。',
+                    tag: '账号状态'
+                };
+            }
             if (code === 'RATE_LIMITED') {
                 return {
-                    title: '体验频率受限',
-                    message: '为保障公共演示体验稳定，首页在线体验已达到短时频控上限。',
-                    hint: '请稍候 1 分钟后再试；或注册账号获取专属 API Key 进行调用。',
+                    title: '请求过于频繁',
+                    message: '当前账号已达到短时请求上限。',
+                    hint: '请稍后再试，或在控制台查看账号 QPS 限制。',
                     tag: '频控限制'
                 };
             }
             if (code === 'API_DISABLED' || code === 'DEMO_DISABLED') {
                 return {
-                    title: '在线体验维护中',
-                    message: '在线解析体验当前正在系统维护中，暂时无法处理体验请求。',
+                    title: '在线解析维护中',
+                    message: '在线解析当前正在系统维护中，暂时无法处理请求。',
                     hint: '请稍后再试或联系系统管理员。',
                     tag: '服务维护'
                 };
@@ -1157,6 +1260,34 @@
             error.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
+        const LANDING_KEY = 'mp_api_key';
+        const landingLoggedIn = {{ logged_in|default(false)|tojson }};
+        function readLandingKey() {
+            try { return (localStorage.getItem(LANDING_KEY) || '').trim(); } catch (e) { return ''; }
+        }
+        function validLandingKey(value) {
+            return /^mp-[A-Za-z0-9]{24}$/.test((value || '').trim());
+        }
+        function hasLandingAccess() {
+            return landingLoggedIn || validLandingKey(readLandingKey());
+        }
+        function syncLandingAuth() {
+            const gate = document.getElementById('parseAuthGate');
+            const ok = document.getElementById('parseAuthOk');
+            const allowed = hasLandingAccess();
+            if (gate) gate.classList.toggle('hidden', allowed);
+            if (ok) ok.classList.toggle('hidden', !allowed);
+        }
+        function revealLandingKeyRow() {
+            const row = document.getElementById('landingKeyRow');
+            const inputEl = document.getElementById('landingKeyInput');
+            if (row) row.classList.remove('hidden');
+            if (inputEl) {
+                inputEl.value = readLandingKey();
+                inputEl.focus();
+            }
+        }
+
         async function handleParse(){
             const text = input.value.trim();
             const button = document.getElementById('parseBtn');
@@ -1171,17 +1302,27 @@
                 }
                 return;
             }
+            if (!hasLandingAccess()) {
+                syncLandingAuth();
+                revealLandingKeyRow();
+                displayError(formatUserErrorMessage({ error_code: 'API_KEY_REQUIRED' }));
+                return;
+            }
 
             button.disabled = true;
             loading.classList.remove('hidden');
             error.classList.add('hidden');
             result.classList.add('hidden');
             const hpWebsite = document.getElementById('hpWebsite')?.value || '';
+            const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+            const storedKey = readLandingKey();
+            if (validLandingKey(storedKey)) headers['Authorization'] = 'Bearer ' + storedKey;
 
             try {
                 const response = await fetch('/api/parse', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    headers,
                     body: JSON.stringify({ text, website: hpWebsite })
                 });
                 const payload = await response.json();
@@ -1216,7 +1357,30 @@
             }
         }
         input.addEventListener('keydown',event=>{if((event.metaKey||event.ctrlKey)&&event.key==='Enter')handleParse()});
-        fetch('https://api.github.com/repos/ucmao/media-parser',{headers:{Accept:'application/vnd.github+json'}}).then(res=>res.ok?res.json():Promise.reject()).then(repo=>{if(repo&&repo.stargazers_count!==undefined){const countStr=new Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(repo.stargazers_count);const el=document.getElementById('githubStars'),badge=document.getElementById('starCountBadge');if(el)el.textContent=countStr;if(badge){badge.classList.remove('hidden');badge.classList.add('inline-flex')}const navEl=document.getElementById('navGithubStars'),navBadge=document.getElementById('navStarBadge');if(navEl)navEl.textContent=countStr;if(navBadge){navBadge.classList.remove('hidden');navBadge.classList.add('inline-flex')}}}).catch(()=>{});
+        syncLandingAuth();
+        document.getElementById('showLandingKeyBtn')?.addEventListener('click', revealLandingKeyRow);
+        document.getElementById('saveLandingKeyBtn')?.addEventListener('click', function () {
+            const value = (document.getElementById('landingKeyInput')?.value || '').trim();
+            if (!validLandingKey(value)) {
+                displayError(formatUserErrorMessage({ error_code: 'INVALID_API_KEY', retdesc: '密钥格式应为 mp- 加 24 位字母数字' }));
+                return;
+            }
+            try { localStorage.setItem(LANDING_KEY, value); } catch (e) {}
+            syncLandingAuth();
+            showToast('密钥已保存');
+            if ((input.value || '').trim()) handleParse();
+        });
+        fetch('https://api.github.com/repos/G2560302707/media-parser',{headers:{Accept:'application/vnd.github+json'}}).then(res=>res.ok?res.json():Promise.reject()).then(repo=>{if(repo&&repo.stargazers_count!==undefined){const countStr=new Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(repo.stargazers_count);const el=document.getElementById('githubStars'),badge=document.getElementById('starCountBadge');if(el)el.textContent=countStr;if(badge){badge.classList.remove('hidden');badge.classList.add('inline-flex')}const navEl=document.getElementById('navGithubStars'),navBadge=document.getElementById('navStarBadge');if(navEl)navEl.textContent=countStr;if(navBadge){navBadge.classList.remove('hidden');navBadge.classList.add('inline-flex')}}}).catch(()=>{});
+        document.querySelectorAll('[data-copy]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var text = btn.getAttribute('data-copy') || '';
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(function () { showToast('已复制'); }).catch(function () { showToast('请手动复制', 'warning'); });
+                } else {
+                    showToast('请手动复制', 'warning');
+                }
+            });
+        });
     </script>
 
     <!-- 动效增强：GSAP / ScrollTrigger / split-type / Lenis（均 defer，失败时页面功能不受影响） -->
@@ -1237,7 +1401,7 @@
                 document.querySelectorAll('main .code-shadow').forEach(tag);
 
                 // 各 section 标题区（capabilities / deployment / docs / faq 的引导块）
-                document.querySelectorAll('#capabilities .lg\\:sticky, #docs .grid > div, #faq details, #deployment .text-center').forEach(tag);
+                document.querySelectorAll('#capabilities .lg\\:sticky, #docs .grid > div, #faq details, #deployment .text-center, #contact > div > div, #contact aside').forEach(tag);
 
                 // 卡片组：capabilities 能力卡与 deployment 部署卡，同批错峰
                 document.querySelectorAll('#capabilities .grid.sm\\:grid-cols-2 > div, #deployment .grid.md\\:grid-cols-3 > div').forEach((card, i) => {

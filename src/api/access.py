@@ -147,6 +147,46 @@ def authenticate_api_key():
     return row, None
 
 
+def authenticate_session_user():
+    """Allow a logged-in console session to parse without pasting a key."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return None, (401, "请提供 API Key", "API_KEY_REQUIRED")
+    db = get_db()
+    user = db.execute(
+        "SELECT id, username, role, active, expires_at, qps_limit, credits FROM users WHERE id=?",
+        (user_id,),
+    ).fetchone()
+    if user is None or not user["active"]:
+        return None, (403, "账号已被停用", "API_KEY_DISABLED")
+    if user_is_expired(user):
+        return None, (403, "账号尚未开通或已到期", "ACCOUNT_EXPIRED")
+    if user["role"] != "admin" and user["credits"] is not None and user["credits"] != -1 and user["credits"] <= 0:
+        return None, (402, "账号解析积分已耗尽，请联系管理员充值", "INSUFFICIENT_CREDITS")
+    exceeded = consume_rate_limits([(f"user:{user['id']}", user["qps_limit"], 1)])
+    if exceeded:
+        _, limit = exceeded
+        return None, (429, f"请求过于频繁，当前账号限制为 {limit} QPS", "RATE_LIMITED")
+    return {
+        "id": None,
+        "user_id": user["id"],
+        "role": user["role"],
+        "user_credits": user["credits"],
+    }, None
+
+
+def authenticate_web_parse():
+    """Homepage parse: API key wins; otherwise a logged-in session. Never anonymous."""
+    authorization = request.headers.get("Authorization", "")
+    has_key = bool(
+        (authorization.lower().startswith("bearer ") and authorization[7:].strip())
+        or (request.args.get("key") or "").strip()
+    )
+    if has_key:
+        return authenticate_api_key()
+    return authenticate_session_user()
+
+
 def platform_access(platform):
     row = get_db().execute(
         "SELECT enabled,qps_limit FROM platform_settings WHERE platform=?", (platform,)

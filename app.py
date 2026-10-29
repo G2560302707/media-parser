@@ -1,7 +1,10 @@
 import os
 import secrets
-import fcntl
 from datetime import timedelta
+try:
+    import fcntl
+except ImportError:  # Windows 无 POSIX 文件锁
+    fcntl = None
 from flask import Flask
 from src.api.parse import bp as api_bp
 from src.web.views import bp as web_bp
@@ -21,7 +24,8 @@ def _load_or_create_secret(data_dir):
     try:
         descriptor = os.open(secret_path, os.O_RDWR | os.O_CREAT, 0o600)
         with os.fdopen(descriptor, "r+", encoding="utf-8") as secret_file:
-            fcntl.flock(secret_file.fileno(), fcntl.LOCK_EX)
+            if fcntl is not None:
+                fcntl.flock(secret_file.fileno(), fcntl.LOCK_EX)
             saved = secret_file.read().strip()
             if saved:
                 return saved
@@ -47,7 +51,7 @@ def create_app(config=None):
     proxy_url = (os.getenv('DYNAMIC_PROXY_API_URL') or os.getenv('JULIANG_PROXY_API_URL') or '').strip()
     app.config['DYNAMIC_PROXY_API_URL'] = proxy_url
     app.config['JULIANG_PROXY_API_URL'] = proxy_url
-    app.config['MAX_CONTENT_LENGTH'] = 32 * 1024
+    app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
     app.config['JSON_SORT_KEYS'] = False
     app.config['TRUST_PROXY_HEADERS'] = os.getenv(

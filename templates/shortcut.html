@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="媒体解析">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="32x32">
+    <title>iPhone 快捷指令 · Media Parser</title>
+    <script src="{{ url_for('static', filename='vendor/tailwind.js') }}"></script>
+    <script>tailwind.config={theme:{extend:{colors:{brand:'#4f46e5'},fontFamily:{sans:['Inter','ui-sans-serif','system-ui']}}}}</script>
+</head>
+<body class="font-sans text-slate-700 antialiased bg-slate-50 selection:bg-indigo-100 selection:text-indigo-900">
+    <header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+        <div class="max-w-lg mx-auto min-h-14 px-5 py-3 flex items-center justify-between gap-3">
+            <a href="{{ url_for('web.index') }}" class="flex items-center gap-2.5 font-bold text-slate-950">
+                <img src="{{ url_for('static', filename='images/logo-web.png') }}" alt="" class="w-8 h-8 rounded-lg border border-slate-200 bg-white p-0.5">
+                <span class="text-sm">Media Parser</span>
+            </a>
+            <a href="{{ url_for('auth.login', **{'from': 'shortcut'}) }}" class="text-sm font-medium text-slate-600 hover:text-brand">已有账号</a>
+        </div>
+    </header>
+
+    <main class="max-w-lg mx-auto px-5 py-10">
+        <p class="font-mono text-xs font-semibold text-brand tracking-wide">IPHONE SHORTCUT</p>
+        <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-950">装一次，以后从 App 点分享就行。</h1>
+        <p class="mt-3 text-slate-600 leading-7">必须带密钥，注册完会自动给你。目前不用付费。</p>
+
+        <div class="mt-7 flex flex-col gap-3">
+            <a href="{{ shortcut_install_url or url_for('web.shortcut_file') }}" class="rounded-xl bg-brand px-5 py-3.5 text-center font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition"{% if shortcut_source == 'icloud' %} target="_blank" rel="noopener"{% endif %}>获取快捷指令</a>
+            {% if logged_in %}
+            <a href="{{ url_for('portal.welcome', **{'from': 'shortcut'}) }}" class="rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-center font-semibold text-slate-800 hover:border-indigo-300 hover:text-brand transition">查看已有密钥</a>
+            {% elif registration_enabled %}
+            <a href="{{ url_for('auth.register', **{'from': 'shortcut'}) }}" class="rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-center font-semibold text-slate-800 hover:border-indigo-300 hover:text-brand transition">去注册，自动拿密钥</a>
+            {% endif %}
+            <a href="{{ url_for('web.shortcut_run') }}" class="text-center text-sm font-semibold text-slate-500 hover:text-brand">不装指令，用网页版</a>
+        </div>
+
+        <ol class="mt-10 space-y-4">
+            <li class="flex gap-3">
+                <span class="shrink-0 w-7 h-7 rounded-full bg-indigo-50 text-brand text-sm font-bold flex items-center justify-center">1</span>
+                <div>
+                    <p class="font-semibold text-slate-900">安装快捷指令</p>
+                    <p class="mt-1 text-sm text-slate-500 leading-6">{% if shortcut_source == 'icloud' %}将通过 Apple iCloud 安装。{% elif shortcut_source == 'uploaded' %}安装本站提供的指令文件。{% else %}若系统提示不受信任，到「设置 → 快捷指令」打开允许即可。{% endif %}微信里请用 Safari 打开本页。</p>
+                </div>
+            </li>
+            <li class="flex gap-3">
+                <span class="shrink-0 w-7 h-7 rounded-full bg-indigo-50 text-brand text-sm font-bold flex items-center justify-center">2</span>
+                <div>
+                    <p class="font-semibold text-slate-900">{% if logged_in %}密钥已就绪{% else %}注册（已有账号就登录）{% endif %}</p>
+                    <p class="mt-1 text-sm text-slate-500 leading-6">{% if logged_in %}这台手机的 Safari 会记住密钥，快捷指令里不用再填。{% else %}注册成功后密钥会显示在屏幕中央，并自动记在这台手机的 Safari 里。{% endif %}</p>
+                </div>
+            </li>
+            <li class="flex gap-3">
+                <span class="shrink-0 w-7 h-7 rounded-full bg-indigo-50 text-brand text-sm font-bold flex items-center justify-center">3</span>
+                <div>
+                    <p class="font-semibold text-slate-900">去抖音 / 小红书点分享</p>
+                    <p class="mt-1 text-sm text-slate-500 leading-6">选「媒体解析」，等页面出结果后长按图片或点「存到相册」。</p>
+                </div>
+            </li>
+        </ol>
+
+        <section class="mt-12 rounded-2xl border border-slate-200 bg-white p-5">
+            <h2 class="text-sm font-bold text-slate-900">安装文件打不开时，自己加 3 步</h2>
+            <ol class="mt-3 space-y-2 text-sm text-slate-600 leading-6 list-decimal pl-5">
+                <li>快捷指令 App 右上角「+」新建</li>
+                <li>添加「URL」，填 <code class="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded break-all">{{ request.url_root.rstrip('/') }}/s?text=</code>，在末尾插入「快捷指令输入」并开启 URL 编码</li>
+                <li>再添加「打开 URL」；信息里打开「显示在分享表单」，类型勾选文本和 URL</li>
+            </ol>
+        </section>
+
+        <section class="mt-6 space-y-3 text-sm">
+            <details class="rounded-2xl border border-slate-200 bg-white p-4">
+                <summary class="font-semibold text-slate-900 cursor-pointer">必须有密钥吗？</summary>
+                <p class="mt-2 text-slate-600 leading-6">必须。接口每次调用都要带。注册会自动生成，不必再进控制台创建。</p>
+            </details>
+            <details class="rounded-2xl border border-slate-200 bg-white p-4">
+                <summary class="font-semibold text-slate-900 cursor-pointer">要付钱吗？</summary>
+                <p class="mt-2 text-slate-600 leading-6">目前不用。如果提示积分用尽，联系管理员即可。</p>
+            </details>
+            <details class="rounded-2xl border border-slate-200 bg-white p-4">
+                <summary class="font-semibold text-slate-900 cursor-pointer">每次都会问密钥吗？</summary>
+                <p class="mt-2 text-slate-600 leading-6">不会。用 Safari 注册后密钥存在本机浏览器，同一 Safari 里打开解析页即可。换浏览器需再粘贴一次。</p>
+            </details>
+        </section>
+    </main>
+</body>
+</html>

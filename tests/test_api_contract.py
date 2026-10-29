@@ -21,7 +21,11 @@ class ApiContractTest(unittest.TestCase):
         self.assertIn("Media Parser", response.get_data(as_text=True))
         self.assertIn("多平台媒体解析", response.get_data(as_text=True))
         self.assertIn("githubStars", response.get_data(as_text=True))
-        self.assertIn("api.github.com/repos/ucmao/media-parser", response.get_data(as_text=True))
+        self.assertIn("api.github.com/repos/G2560302707/media-parser", response.get_data(as_text=True))
+        self.assertIn("https://github.com/G2560302707/media-parser/tree/main", response.get_data(as_text=True))
+        self.assertIn("https://github.com/ucmao/media-parser", response.get_data(as_text=True))
+        self.assertIn("2560302707", response.get_data(as_text=True))
+        self.assertIn("guo2560302707@gmail.com", response.get_data(as_text=True))
         self.assertIn("开源自部署", response.get_data(as_text=True))
         self.assertNotIn("套餐资费", response.get_data(as_text=True))
         self.assertNotIn("SLA 99.9%", response.get_data(as_text=True))
@@ -253,15 +257,34 @@ class ApiContractTest(unittest.TestCase):
         payload = response.get_json()
         self.assertEqual(payload["status"], "ok")
 
-        # Test make_response contract
         from src.api.response import make_response
         with app.test_request_context():
             res = make_response(200, "ok", {"foo": "bar"}, True)
             data = res.get_json()
             self.assertIn("_tip", data)
-            self.assertEqual(data["_tip"]["author"], "ucmao")
-            self.assertEqual(data["_tip"]["website"], "https://github.com/ucmao/media-parser")
-            self.assertEqual(data["_tip"]["notice"], "本接口由开源项目 media-parser 提供服务")
+            self.assertIn("author", data["_tip"])
+            self.assertIn("website", data["_tip"])
+            self.assertIn("notice", data["_tip"])
+
+    def test_fresh_install_tip_defaults_to_current_maintainer(self):
+        import os
+        import tempfile
+        from app import create_app
+        from src.api.response import make_response
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fresh = create_app({
+                "TESTING": True,
+                "SECRET_KEY": "test-secret",
+                "DATABASE": os.path.join(temp_dir, "test.db"),
+            })
+            with fresh.app_context():
+                data = make_response(200, "ok", {"foo": "bar"}, True).get_json()
+            self.assertEqual(data["_tip"]["author"], "G2560302707")
+            self.assertEqual(
+                data["_tip"]["website"],
+                "https://github.com/G2560302707/media-parser/tree/main",
+            )
 
 
 if __name__ == "__main__":

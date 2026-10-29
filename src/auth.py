@@ -30,9 +30,30 @@ def legacy_hash_api_key(raw_key):
         return ""
 
 
+SHORTCUT_KEY_NAME = "快捷指令"
+MAX_KEYS_PER_USER = 10
+
+
 def generate_api_key(length=24):
     alphabet = string.ascii_letters + string.digits
     return "mp-" + "".join(secrets.choice(alphabet) for _ in range(length))
+
+
+def issue_api_key(user_id, name=SHORTCUT_KEY_NAME):
+    """给用户发一把新密钥。达到上限时返回 None。"""
+    db = get_db()
+    count = db.execute(
+        "SELECT COUNT(*) count FROM api_keys WHERE user_id=?", (user_id,)
+    ).fetchone()["count"]
+    if count >= MAX_KEYS_PER_USER:
+        return None
+    raw_key = generate_api_key()
+    db.execute(
+        "INSERT INTO api_keys(user_id, name, key, created_at) VALUES(?,?,?,?)",
+        (user_id, (name or SHORTCUT_KEY_NAME)[:40], raw_key, utcnow()),
+    )
+    db.commit()
+    return raw_key
 
 
 def csrf_token():
@@ -163,27 +184,42 @@ def register():
                     if trial_days > 0:
                         expires_at = (datetime.now(timezone.utc) + timedelta(days=trial_days)).isoformat(timespec="seconds")
                     db = get_db()
-                    db.execute(
+                    cursor = db.execute(
                         "INSERT INTO users(username,password_hash,qps_limit,expires_at,credits,created_at) VALUES(?,?,?,?,?,?)",
                         (username, generate_password_hash(password), int(setting("default_user_qps", "2")), expires_at, initial_credits, utcnow()),
+                    )
+                    user_id = cursor.lastrowid
+                    raw_key = generate_api_key()
+                    db.execute(
+                        "INSERT INTO api_keys(user_id, name, key, created_at) VALUES(?,?,?,?)",
+                        (user_id, SHORTCUT_KEY_NAME, raw_key, utcnow()),
                     )
                     db.commit()
                     if trial_days > 0:
                         if initial_credits == -1:
-                            msg = f"注册成功！已自动开启 {trial_days} 天免费试用并享有无限解析额度，请登录"
+                            msg = f"注册成功！已自动开启 {trial_days} 天免费试用并享有无限解析额度"
                         elif initial_credits > 0:
-                            msg = f"注册成功！已自动开启 {trial_days} 天免费试用并赠送 {initial_credits} 积分，请登录"
+                            msg = f"注册成功！已自动开启 {trial_days} 天免费试用并赠送 {initial_credits} 积分"
                         else:
-                            msg = f"注册成功！已自动开启 {trial_days} 天免费试用，请登录"
+                            msg = f"注册成功！已自动开启 {trial_days} 天免费试用"
                     else:
                         if initial_credits == -1:
-                            msg = "注册成功！账号永久有效并享有无限解析额度，请登录"
+                            msg = "注册成功！账号永久有效并享有无限解析额度"
                         elif initial_credits > 0:
-                            msg = f"注册成功！账号永久有效并赠送 {initial_credits} 积分，请登录"
+                            msg = f"注册成功！账号永久有效并赠送 {initial_credits} 积分"
                         else:
-                            msg = "注册成功！账号永久有效，请登录"
+                            msg = "注册成功！账号永久有效"
+                    from_shortcut = (request.form.get("from") or request.args.get("from") or "") == "shortcut"
+                    if session.get("user_id"):
+                        flash(msg, "success")
+                        return redirect(url_for("auth.login"))
+                    session.clear()
+                    session["user_id"] = user_id
+                    session.permanent = True
+                    session["new_api_key"] = raw_key
                     flash(msg, "success")
-                    return redirect(url_for("auth.login"))
+                    welcome_args = {"from": "shortcut"} if from_shortcut else {}
+                    return redirect(url_for("portal.welcome", **welcome_args))
                 except Exception as exc:
                     if "UNIQUE" not in str(exc).upper():
                         raise
@@ -217,9 +253,12 @@ def login():
             else:
                 session.clear()
                 session["user_id"] = user["id"]
-                session.permanent = request.form.get("remember_me") in {"1", "on", "true"}
+                session.permanent = request.form.get("remember_me") in {"1", "on", "true"} or request.form.get("remember") in {"1", "on", "true"}
+                from_shortcut = (request.form.get("from") or request.args.get("from") or "") == "shortcut"
                 target = request.args.get("next", "")
-                if (
+                if from_shortcut and user["role"] != "admin":
+                    target = url_for("portal.welcome", **{"from": "shortcut"})
+                elif (
                     not target.startswith("/")
                     or target.startswith("//")
                     or target.startswith("/auth/")

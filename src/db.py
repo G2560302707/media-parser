@@ -123,14 +123,27 @@ def init_db():
         "default_trial_days": "365",
         "default_initial_credits": "100",
         "api_tip_enabled": "1",
-        "api_tip_author": "ucmao",
-        "api_tip_website": "https://github.com/ucmao/media-parser",
+        "api_tip_author": "G2560302707",
+        "api_tip_website": "https://github.com/G2560302707/media-parser/tree/main",
         "api_tip_notice": "本接口由开源项目 media-parser 提供服务",
+        "shortcut_icloud_url": "",
     }
     db.executemany(
         "INSERT OR IGNORE INTO system_settings(key, value) VALUES (?, ?)",
         defaults.items(),
     )
+    author = db.execute("SELECT value FROM system_settings WHERE key='api_tip_author'").fetchone()
+    if author and author["value"] == "ucmao":
+        db.execute(
+            "UPDATE system_settings SET value=? WHERE key='api_tip_author'",
+            ("G2560302707",),
+        )
+    website = db.execute("SELECT value FROM system_settings WHERE key='api_tip_website'").fetchone()
+    if website and website["value"] == "https://github.com/ucmao/media-parser":
+        db.execute(
+            "UPDATE system_settings SET value=? WHERE key='api_tip_website'",
+            ("https://github.com/G2560302707/media-parser/tree/main",),
+        )
     db.commit()
 
 

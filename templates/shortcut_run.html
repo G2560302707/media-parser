@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="媒体解析">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="32x32">
+    <title>解析 · Media Parser</title>
+    <script src="{{ url_for('static', filename='vendor/tailwind.js') }}"></script>
+    <script>tailwind.config={theme:{extend:{colors:{brand:'#4f46e5'}}}}</script>
+</head>
+<body class="font-sans text-slate-800 antialiased bg-slate-50 min-h-screen">
+    <header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+        <div class="max-w-lg mx-auto min-h-14 px-4 py-3 flex items-center justify-between gap-3">
+            <a href="{{ url_for('web.shortcut_guide') }}" class="flex items-center gap-2 font-bold text-slate-950">
+                <img src="{{ url_for('static', filename='images/logo-web.png') }}" alt="" class="w-8 h-8 rounded-lg border border-slate-200 bg-white p-0.5">
+                <span class="text-sm">媒体解析</span>
+            </a>
+            <button type="button" id="keyBtn" class="text-xs font-semibold text-brand">密钥</button>
+        </div>
+    </header>
+
+    <main class="max-w-lg mx-auto px-4 py-5 pb-16 space-y-4">
+        <section id="keyPanel" class="hidden rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <p class="text-sm font-semibold text-amber-950">粘贴 API 密钥（mp- 开头）</p>
+            <p class="mt-1 text-xs text-amber-800 leading-5">只保存在这台手机的浏览器，不会上传到别处。</p>
+            <input id="keyInput" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="mp-xxxxxxxx" class="mt-3 w-full px-3 py-2.5 text-sm font-mono rounded-lg border border-amber-200 bg-white">
+            <div class="mt-3 flex gap-2">
+                <button type="button" id="saveKeyBtn" class="flex-1 h-10 rounded-lg bg-brand text-white text-sm font-bold">保存并继续</button>
+                <a href="{{ url_for('auth.register', **{'from': 'shortcut'}) }}" class="h-10 px-3 inline-flex items-center text-xs font-semibold text-brand">去注册</a>
+            </div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-4">
+            <label for="shareText" class="sr-only">分享内容</label>
+            <textarea id="shareText" rows="3" maxlength="2000" placeholder="粘贴分享口令或链接" class="w-full resize-none text-sm leading-6 outline-none">{{ share_text }}</textarea>
+            <div class="mt-3 flex gap-2">
+                <button type="button" id="parseBtn" class="flex-1 h-11 rounded-xl bg-brand text-white text-sm font-bold disabled:opacity-50">解析</button>
+                <button type="button" id="pasteBtn" class="h-11 px-4 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700">粘贴</button>
+            </div>
+        </section>
+
+        <p id="status" class="hidden text-sm text-slate-500 px-1"></p>
+        <div id="errorBox" class="hidden rounded-2xl border border-amber-200 bg-white p-4 text-sm text-amber-950"></div>
+        <div id="resultBox" class="hidden space-y-4"></div>
+    </main>
+
+<script>
+(function () {
+    var KEY = 'mp_api_key';
+    var shareText = document.getElementById('shareText');
+    var parseBtn = document.getElementById('parseBtn');
+    var pasteBtn = document.getElementById('pasteBtn');
+    var keyPanel = document.getElementById('keyPanel');
+    var keyInput = document.getElementById('keyInput');
+    var saveKeyBtn = document.getElementById('saveKeyBtn');
+    var keyBtn = document.getElementById('keyBtn');
+    var statusEl = document.getElementById('status');
+    var errorBox = document.getElementById('errorBox');
+    var resultBox = document.getElementById('resultBox');
+
+    function readKey() {
+        try { return (localStorage.getItem(KEY) || '').trim(); } catch (e) { return ''; }
+    }
+    function writeKey(value) {
+        try { localStorage.setItem(KEY, value); } catch (e) {}
+    }
+    function validKey(value) {
+        return /^mp-[A-Za-z0-9]{24}$/.test((value || '').trim());
+    }
+    function showKeyPanel(force) {
+        var current = readKey();
+        keyInput.value = current;
+        keyPanel.classList.toggle('hidden', !force && validKey(current));
+    }
+    function setStatus(text) {
+        statusEl.textContent = text || '';
+        statusEl.classList.toggle('hidden', !text);
+    }
+    function showError(text) {
+        errorBox.textContent = text || '';
+        errorBox.classList.toggle('hidden', !text);
+    }
+    function esc(s) {
+        return String(s || '').replace(/[&<>"']/g, function (c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+    }
+    function imageUrl(item) {
+        if (!item) return '';
+        if (typeof item === 'string') return item;
+        return item.live_photo_url || item.url || '';
+    }
+    function stillUrl(item) {
+        if (!item) return '';
+        if (typeof item === 'string') return item;
+        return item.url || '';
+    }
+    async function shareFile(url, filename, mime) {
+        try {
+            var res = await fetch(url);
+            if (!res.ok) throw new Error('download');
+            var blob = await res.blob();
+            var file = new File([blob], filename, { type: mime || blob.type || 'application/octet-stream' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: filename });
+                return;
+            }
+        } catch (e) {}
+        window.open(url, '_blank');
+    }
+    function render(data) {
+        var html = '';
+        var meta = [];
+        if (data.platform) meta.push(esc(data.platform));
+        if (data.author && data.author.nickname) meta.push('@' + esc(data.author.nickname));
+        html += '<section class="rounded-2xl border border-slate-200 bg-white overflow-hidden">';
+        html += '<div class="p-4 border-b border-slate-100"><p class="text-xs font-semibold text-brand">' + meta.join(' · ') + '</p>';
+        html += '<h2 class="mt-1 text-base font-semibold text-slate-900 leading-6">' + esc(data.title || '未命名作品') + '</h2>';
+        if (data.is_preview) html += '<p class="mt-2 text-xs text-amber-700">当前为试听片段' + (data.full_duration ? '，完整约 ' + data.full_duration + ' 秒' : '') + '</p>';
+        html += '</div>';
+
+        var videos = [];
+        if (Array.isArray(data.video_list) && data.video_list.length) videos = data.video_list.filter(Boolean);
+        else if (data.video_url) videos = [data.video_url];
+        videos.forEach(function (url, i) {
+            html += '<div class="p-4 border-b border-slate-100 space-y-2">';
+            html += '<video src="' + esc(url) + '" controls playsinline class="w-full rounded-xl bg-black max-h-80"></video>';
+            html += '<button type="button" class="save-btn w-full h-11 rounded-xl bg-brand text-white text-sm font-bold" data-url="' + esc(url) + '" data-name="video-' + (i + 1) + '.mp4" data-mime="video/mp4">存到相册</button>';
+            html += '</div>';
+        });
+
+        var images = Array.isArray(data.image_list) ? data.image_list : [];
+        if (images.length) {
+            html += '<div class="p-4 grid grid-cols-2 gap-2">';
+            images.forEach(function (item, i) {
+                var src = stillUrl(item);
+                var save = imageUrl(item);
+                var live = item && typeof item === 'object' && item.live_photo_url;
+                html += '<div class="space-y-1.5">';
+                if (src) html += '<img src="' + esc(src) + '" alt="" class="w-full rounded-lg object-cover aspect-square bg-slate-100" referrerpolicy="no-referrer">';
+                html += '<button type="button" class="save-btn w-full h-9 rounded-lg border border-slate-200 text-xs font-semibold" data-url="' + esc(save) + '" data-name="image-' + (i + 1) + (live ? '.mp4' : '.jpg') + '" data-mime="' + (live ? 'video/mp4' : 'image/jpeg') + '">' + (live ? '存实况视频' : '保存') + '</button>';
+                html += '</div>';
+            });
+            html += '</div>';
+            html += '<p class="px-4 pb-3 text-xs text-slate-500">也可以长按图片，选「存储到照片」。</p>';
+        }
+
+        if (data.audio_url) {
+            html += '<div class="p-4 space-y-2 border-t border-slate-100">';
+            html += '<audio src="' + esc(data.audio_url) + '" controls class="w-full"></audio>';
+            html += '<a href="' + esc(data.audio_url) + '" target="_blank" class="block text-center h-10 leading-10 rounded-xl border border-slate-200 text-sm font-semibold">打开音频</a>';
+            html += '</div>';
+        }
+
+        if (data.desc) {
+            html += '<div class="p-4 border-t border-slate-100"><p class="text-sm text-slate-600 whitespace-pre-wrap leading-6">' + esc(data.desc) + '</p>';
+            html += '<button type="button" id="copyDescBtn" class="mt-2 text-xs font-semibold text-brand">复制文案</button></div>';
+        }
+        html += '</section>';
+        resultBox.innerHTML = html;
+        resultBox.classList.remove('hidden');
+        resultBox.querySelectorAll('.save-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                shareFile(btn.getAttribute('data-url'), btn.getAttribute('data-name'), btn.getAttribute('data-mime'));
+            });
+        });
+        var copyDesc = document.getElementById('copyDescBtn');
+        if (copyDesc) copyDesc.addEventListener('click', function () {
+            navigator.clipboard.writeText(data.desc || '').then(function () { copyDesc.textContent = '已复制'; });
+        });
+    }
+
+    async function parse() {
+        var key = readKey();
+        if (!validKey(key)) {
+            showKeyPanel(true);
+            showError('请先保存密钥');
+            return;
+        }
+        var text = (shareText.value || '').trim().slice(0, 2000);
+        if (!text) {
+            showError('请粘贴分享链接或口令');
+            return;
+        }
+        showError('');
+        resultBox.classList.add('hidden');
+        parseBtn.disabled = true;
+        setStatus('正在解析…');
+        try {
+            var res = await fetch('/api/v1/parse', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + key,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ text: text })
+            });
+            var body = await res.json();
+            if (!body || body.succ !== true) {
+                var code = body && body.error_code;
+                showError((body && body.retdesc) || '解析失败');
+                if (code === 'API_KEY_REQUIRED' || code === 'INVALID_API_KEY') showKeyPanel(true);
+                return;
+            }
+            render(body.data || {});
+        } catch (e) {
+            showError('网络不通，请确认用 Safari 打开本站');
+        } finally {
+            parseBtn.disabled = false;
+            setStatus('');
+        }
+    }
+
+    if (location.hash.indexOf('key=') === 1) {
+        var hashed = decodeURIComponent(location.hash.slice(5));
+        if (validKey(hashed)) writeKey(hashed);
+        history.replaceState(null, '', location.pathname + location.search);
+    }
+    showKeyPanel(false);
+    saveKeyBtn.addEventListener('click', function () {
+        var value = (keyInput.value || '').trim();
+        if (!validKey(value)) {
+            showError('密钥格式应为 mp- 加 24 位字母数字');
+            return;
+        }
+        writeKey(value);
+        keyPanel.classList.add('hidden');
+        showError('');
+        if ((shareText.value || '').trim()) parse();
+    });
+    keyBtn.addEventListener('click', function () { showKeyPanel(true); });
+    parseBtn.addEventListener('click', parse);
+    pasteBtn.addEventListener('click', async function () {
+        try {
+            shareText.value = await navigator.clipboard.readText();
+        } catch (e) {
+            showError('请长按输入框粘贴');
+        }
+    });
+    if (validKey(readKey()) && (shareText.value || '').trim()) parse();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+{% extends 'base_console.html' %}
+{% block title %}注册成功{% endblock %}
+{% block body %}
+<main class="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative selection:bg-indigo-100 selection:text-indigo-900">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <a href="{{ url_for('web.index') }}" title="返回首页" class="inline-flex items-center justify-center mb-3">
+                <img src="{{ url_for('static', filename='images/logo-web.png') }}" alt="Media Parser Logo" class="w-12 h-12 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm hover:scale-105 transition">
+            </a>
+            <h2 class="text-xl font-bold text-slate-900 tracking-tight">注册成功</h2>
+            <p class="text-xs text-slate-500 mt-1">密钥已生成，复制一次就能用</p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 p-7">
+            {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="mb-4 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border text-sm {{ 'border-red-200 text-red-700 bg-red-50' if category == 'error' else ('border-amber-200 text-amber-700 bg-amber-50' if category == 'warning' else 'border-emerald-200 text-emerald-800 bg-emerald-50') }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+
+            {% if api_key %}
+            <p class="text-sm font-semibold text-slate-900 mb-2">你的 API 密钥</p>
+            <p class="text-xs text-slate-500 mb-3 leading-5">已保存在这台手机的 Safari 里。不用粘贴到快捷指令，装好后从抖音 / 小红书点分享即可。</p>
+            <div id="welcome-key" class="p-3.5 bg-slate-50 text-slate-800 font-mono text-sm font-semibold rounded-xl break-all select-all mb-4 border border-slate-200">{{ api_key }}</div>
+            <div class="flex flex-col gap-2.5">
+                <a href="{{ url_for('web.shortcut_guide') }}" class="w-full h-11 inline-flex items-center justify-center rounded-lg bg-brand hover:bg-indigo-700 text-white font-bold text-sm shadow-sm transition">获取 iPhone 快捷指令</a>
+                <a href="{{ url_for('web.shortcut_run') }}#key={{ api_key }}" class="w-full h-11 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-800 font-semibold text-sm hover:border-indigo-300 hover:text-brand transition">先在网页里试一次</a>
+                <button type="button" id="copy-key-btn" class="w-full h-11 inline-flex items-center justify-center rounded-lg text-sm font-semibold text-slate-600 hover:text-brand transition">复制密钥</button>
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-600 leading-6">账号已创建，但暂时没有可用密钥。请到控制台新建一把。</p>
+            <a href="{{ url_for('portal.keys') }}" class="mt-5 w-full h-11 inline-flex items-center justify-center rounded-lg bg-brand text-white font-bold text-sm">去密钥页</a>
+            {% endif %}
+
+            <div class="mt-5 pt-4 border-t border-slate-100 text-center">
+                <a class="text-xs text-slate-500 hover:text-slate-800 font-medium" href="{{ url_for('portal.dashboard') }}">进入控制台</a>
+            </div>
+        </div>
+    </div>
+</main>
+{% if api_key %}
+<script>
+(function () {
+    var key = {{ api_key|tojson }};
+    try { localStorage.setItem('mp_api_key', key); } catch (e) {}
+    var btn = document.getElementById('copy-key-btn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+        var done = function () {
+            btn.textContent = '已复制';
+            setTimeout(function () { btn.textContent = '复制密钥'; }, 1600);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(key).then(done).catch(function () {
+                window.getSelection().selectAllChildren(document.getElementById('welcome-key'));
+                document.execCommand('copy');
+                done();
+            });
+        } else {
+            window.getSelection().selectAllChildren(document.getElementById('welcome-key'));
+            document.execCommand('copy');
+            done();
+        }
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

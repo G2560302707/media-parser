@@ -5,6 +5,7 @@ from src.parsers.base_parser import BaseParser
 from configs.logging_config import get_logger
 from configs.general_constants import USER_AGENT_PC, USER_AGENT_M
 from src.utils.cookie_manager import get_platform_cookie
+from utils.web_fetcher import UrlParser
 import requests
 
 logger = get_logger(__name__)
@@ -125,12 +126,20 @@ class XiaohongshuParser(BaseParser):
         url = None
 
         if isinstance(img_obj_or_url, dict):
-            file_id = img_obj_or_url.get('fileId')
-            url = img_obj_or_url.get('urlDefault') or img_obj_or_url.get('url')
+            file_id = img_obj_or_url.get('fileId') or img_obj_or_url.get('file_id')
+            url = (
+                img_obj_or_url.get('urlDefault')
+                or img_obj_or_url.get('url_default')
+                or img_obj_or_url.get('url')
+                or img_obj_or_url.get('urlPre')
+                or img_obj_or_url.get('url_pre')
+            )
             if not url:
-                info_list = img_obj_or_url.get('infoList', [])
+                info_list = img_obj_or_url.get('infoList') or img_obj_or_url.get('info_list') or []
                 if info_list and isinstance(info_list, list):
-                    url = info_list[-1].get('url') or info_list[0].get('url', '')
+                    first_info = info_list[-1] if isinstance(info_list[-1], dict) else {}
+                    last_info = info_list[0] if isinstance(info_list[0], dict) else {}
+                    url = first_info.get('url') or last_info.get('url', '')
         elif isinstance(img_obj_or_url, str):
             url = img_obj_or_url
 

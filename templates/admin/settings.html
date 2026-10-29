@@ -82,8 +82,8 @@
 
                         <div class="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4">
                             <div>
-                                <div class="font-medium text-slate-900">首页在线体验</div>
-                                <div class="text-xs text-slate-500 mt-0.5">允许访客在首页未登录状态下直接体验视频解析功能</div>
+                                <div class="font-medium text-slate-900">首页在线解析</div>
+                                <div class="text-xs text-slate-500 mt-0.5">在首页展示解析入口。匿名无法调用，必须登录或提供 API 密钥，并扣除积分</div>
                             </div>
                             <div class="shrink-0">
                                 <label class="switch-toggle" title="切换首页在线体验状态">
@@ -386,7 +386,7 @@
                                     <label for="api_tip_author"
                                         class="block text-xs font-semibold text-slate-700">作者</label>
                                     <input type="text" id="api_tip_author" name="api_tip_author"
-                                        value="{{ settings.get('api_tip_author', 'ucmao') }}" placeholder="例如: ucmao"
+                                        value="{{ settings.get('api_tip_author', 'G2560302707') }}" placeholder="例如: G2560302707"
                                         oninput="updateApiTipPreview()" onchange="triggerSettingsSubmit(this)"
                                         class="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50">
                                 </div>
@@ -394,8 +394,8 @@
                                     <label for="api_tip_website"
                                         class="block text-xs font-semibold text-slate-700">官网地址</label>
                                     <input type="url" id="api_tip_website" name="api_tip_website"
-                                        value="{{ settings.get('api_tip_website', 'https://github.com/ucmao/media-parser') }}"
-                                        placeholder="例如: https://github.com/ucmao/media-parser"
+                                        value="{{ settings.get('api_tip_website', 'https://github.com/G2560302707/media-parser/tree/main') }}"
+                                        placeholder="例如: https://github.com/G2560302707/media-parser/tree/main"
                                         oninput="updateApiTipPreview()" onchange="triggerSettingsSubmit(this)"
                                         class="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50">
                                 </div>
@@ -495,6 +495,54 @@
                 </section>
             </div>
         </form>
+
+        <div id="shortcut-override-panel" class="space-y-6">
+            <section class="bg-white rounded-xl border border-slate-200/80 p-5 sm:p-6 shadow-xs space-y-5">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <span class="text-brand flex items-center justify-center">{{ icon('link', 'w-4 h-4') }}</span>
+                        iPhone 快捷指令
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1 leading-5">指令只负责打开解析页。解析、扣积分、存相册都在网页 <code class="font-mono">/s</code>，改那些不用换文件。安装文件存在数据目录，后台替换后立刻生效，不用重新发版。</p>
+                </div>
+
+                <div class="rounded-lg border border-slate-100 bg-slate-50 px-3.5 py-3 text-xs text-slate-600 space-y-1">
+                    {% if settings.get('shortcut_icloud_url') %}
+                    <p><span class="font-semibold text-slate-800">当前安装入口：</span>iCloud 分享链接（用户点「获取快捷指令」会打开 Apple 安装页）</p>
+                    {% elif shortcut_override.present %}
+                    <p><span class="font-semibold text-slate-800">当前安装入口：</span>你上传的文件（{{ shortcut_override.size }} 字节，{{ shortcut_override.mtime_text }} 更新）</p>
+                    {% else %}
+                    <p><span class="font-semibold text-slate-800">当前安装入口：</span>程序现场生成的未签名文件。部分 iPhone 会提示不受信任，可用下面两种方式替换。</p>
+                    {% endif %}
+                </div>
+
+                <form method="post" action="{{ url_for('admin.update_shortcut') }}" enctype="multipart/form-data" class="space-y-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="space-y-1.5">
+                        <label for="shortcut_icloud_url" class="block text-xs font-semibold text-slate-700">iCloud 分享链接（优先）</label>
+                        <input type="url" id="shortcut_icloud_url" name="shortcut_icloud_url"
+                            value="{{ settings.get('shortcut_icloud_url', '') }}"
+                            placeholder="https://www.icloud.com/shortcuts/……"
+                            class="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50 font-mono">
+                        <p class="text-[11px] text-slate-500 leading-5">在 iPhone「快捷指令」里做好后点分享 → 复制 iCloud 链接，粘到这里保存。这是 iOS 最稳的安装方式。</p>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="shortcut_file" class="block text-xs font-semibold text-slate-700">或上传 .shortcut 文件</label>
+                        <input type="file" id="shortcut_file" name="shortcut_file" accept=".shortcut,.wflow,application/octet-stream"
+                            class="block w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-brand hover:file:bg-indigo-100">
+                        <p class="text-[11px] text-slate-500 leading-5">iPhone 把指令分享到「文件」后，把 <code class="font-mono">.shortcut</code> 传到这里。没有填 iCloud 链接时，用户下载的就是这份文件。</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 pt-1">
+                        <button type="submit" name="action" value="save"
+                            class="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">保存并立即生效</button>
+                        <button type="submit" name="action" value="restore"
+                            class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-indigo-300 hover:text-brand transition">恢复内置文件</button>
+                        <a href="{{ url_for('web.shortcut_guide') }}" target="_blank" rel="noopener"
+                            class="text-xs font-semibold text-slate-500 hover:text-brand">查看用户安装页</a>
+                    </div>
+                </form>
+            </section>
+        </div>
     </div>
 </main>
 
@@ -520,6 +568,10 @@
                 }
             }
         });
+        const shortcutPanel = document.getElementById('shortcut-override-panel');
+        if (shortcutPanel) {
+            shortcutPanel.style.display = tabKey === 'access' ? 'block' : 'none';
+        }
         try {
             history.replaceState(null, '', '#tab=' + tabKey);
         } catch (e) { }
@@ -571,8 +623,8 @@
         const previewEl = document.getElementById('api-tip-preview-code');
         if (!previewEl) return;
 
-        const author = (authorEl && authorEl.value.trim()) || 'ucmao';
-        const website = (websiteEl && websiteEl.value.trim()) || 'https://github.com/ucmao/media-parser';
+        const author = (authorEl && authorEl.value.trim()) || 'G2560302707';
+        const website = (websiteEl && websiteEl.value.trim()) || 'https://github.com/G2560302707/media-parser/tree/main';
         const notice = (noticeEl && noticeEl.value.trim()) || '本接口由开源项目 media-parser 提供服务';
 
         const samplePayload = {

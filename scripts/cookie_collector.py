@@ -34,6 +34,9 @@ from src.utils.cookie_registry import (  # noqa: E402
 DB_PATH = PROJECT_ROOT / "data" / "media_parser.db"
 PROFILE_ROOT = PROJECT_ROOT / "data" / ".cookie_profile"
 
+# 默认推送服务器（生产部署地址），交互选择"推送到远程服务器"时回车即用
+DEFAULT_SERVER = "https://after7lab.cloud:81"
+
 # 各平台登录入口（采集哪个平台的 Cookie 就打开哪个站，人工登录）
 SITE_URLS = {
     "douyin": "https://www.douyin.com",
@@ -187,38 +190,31 @@ def _save_local(platform_key, cookie_str):
     print(f"[√] 已写入本地数据库 {entry['db_keys'][0]}（保存即生效，无需重启）")
 
 
-def _push_remote(platform_key, cookie_str, server, username, password):
-    """一键推送到远程服务器后台：登录 → 取会话 CSRF → 写入凭据。"""
+def _push_remote(platform_key, cookie_str, server, token=""):
+    """一键推送到远程服务器免登录通道：/admin/api/cookies/push（令牌可选）。"""
     import requests
 
     server = server.rstrip("/")
-    s = requests.Session()
-    s.headers["User-Agent"] = "cookie-collector/1.0"
-
-    r = s.get(f"{server}/auth/login", timeout=15)
-    r.raise_for_status()
-    m = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', r.text)
-    if not m:
-        _fail("登录页未找到 CSRF 令牌，请确认地址指向本服务的根路径")
-    r = s.post(
-        f"{server}/auth/login",
-        data={"username": username, "password": password, "csrf_token": m.group(1)},
-        timeout=15,
-    )
-    if "auth/login" in r.url and "csrf_token" in r.text:
-        _fail("登录失败：用户名或密码错误（或触发了频率限制）")
-
-    r = s.get(f"{server}/admin/cookies", timeout=15)
-    r.raise_for_status()
-    m = re.search(r'const CSRF = "([^"]+)"', r.text)
-    if not m:
-        _fail("无法获取巡检页会话令牌，请确认该账号是管理员")
-    r = s.post(
-        f"{server}/admin/api/cookies/credential",
-        data={"platform": platform_key, "value": cookie_str, "csrf_token": m.group(1)},
-        timeout=20,
-    )
-    payload = r.json()
+    payload_data = {"platform": platform_key, "value": cookie_str}
+    if token:
+        payload_data["token"] = token
+    try:
+        r = requests.post(
+            f"{server}/admin/api/cookies/push",
+            data=payload_data,
+            headers={"User-Agent": "cookie-collector/1.0"},
+            timeout=20,
+        )
+    except requests.RequestException as e:
+        _fail(f"无法连接 {server}: {e}")
+    if r.status_code == 404:
+        _fail("服务器未提供免登录推送接口，请升级服务端镜像后重试")
+    if r.status_code == 401:
+        _fail("推送令牌错误或缺失：服务器 .env 配置了 COOKIE_PUSH_TOKEN，需传入相同令牌")
+    try:
+        payload = r.json()
+    except ValueError:
+        _fail(f"服务器响应异常（HTTP {r.status_code}），请确认地址正确")
     if payload.get("succ"):
         print(f"[√] 已推送到 {server}（{COOKIE_REGISTRY[platform_key]['platform_name']}，状态: {payload['data']['status']}）")
     else:
@@ -230,9 +226,9 @@ def main():
     parser.add_argument("-p", "--platform", choices=COOKIE_REGISTRY, help="跳过平台选择")
     parser.add_argument("--print", action="store_true", help="只打印 Cookie 不写库")
     parser.add_argument("--env", action="store_true", help="输出 export XXX_COOKIE=...")
-    parser.add_argument("--push", metavar="URL", help="采集后推送到指定服务器后台")
-    parser.add_argument("--user", help="推送用的管理员用户名")
-    parser.add_argument("--password", help="推送用的管理员密码（缺省交互输入）")
+    parser.add_argument("--push", metavar="URL", nargs="?", const=DEFAULT_SERVER,
+                        help=f"采集后推送到指定服务器后台（不带值时默认 {DEFAULT_SERVER}）")
+    parser.add_argument("--token", default="", help="推送令牌（服务器 .env 配置了 COOKIE_PUSH_TOKEN 时必填）")
     args = parser.parse_args()
 
     platform_key = _pick_platform(args)
@@ -250,9 +246,8 @@ def main():
         print(f'\nexport {env_key}="{cookie_str}"')
         return
     if args.push:
-        username = args.user or input("管理员用户名: ").strip()
-        password = args.password or getpass.getpass("管理员密码: ")
-        _push_remote(platform_key, cookie_str, args.push, username, password)
+        token = args.token or getpass.getpass("推送令牌（未配置可回车跳过）: ").strip()
+        _push_remote(platform_key, cookie_str, args.push, token)
         return
 
     # 全交互：选去向
@@ -270,10 +265,9 @@ def main():
         env_key = COOKIE_REGISTRY[platform_key]["env_keys"][0]
         print(f'\nexport {env_key}="{cookie_str}"')
     elif choice == "4":
-        server = input("服务器地址（如 https://api.example.com）: ").strip()
-        username = input("管理员用户名: ").strip()
-        password = getpass.getpass("管理员密码: ")
-        _push_remote(platform_key, cookie_str, server, username, password)
+        server = input(f"服务器地址（回车默认 {DEFAULT_SERVER}）: ").strip() or DEFAULT_SERVER
+        token = getpass.getpass("推送令牌（未配置可回车跳过）: ").strip()
+        _push_remote(platform_key, cookie_str, server, token)
     else:
         _fail("无效选择")
 

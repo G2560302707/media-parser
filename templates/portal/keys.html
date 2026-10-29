@@ -58,7 +58,7 @@
                         <h2 class="text-base font-bold text-slate-900">API 密钥</h2>
                         <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">{{ keys_table.pagination.total_count }} 个密钥</span>
                     </div>
-                    <p class="text-xs text-slate-500 mt-1">最多可创建 10 个密钥。可通过小眼睛切换明文或一键复制，推荐在请求头中使用 Authorization 传参。</p>
+                    <p class="text-xs text-slate-500 mt-1">最多可创建 10 个密钥。iPhone 快捷指令本身不存密钥，用 Safari 打开解析页粘贴一次即可。<a href="{{ url_for('web.shortcut_guide') }}" class="text-brand font-semibold hover:underline">查看快捷指令说明</a></p>
                 </div>
                 <button type="button" class="px-3.5 py-2 rounded-lg text-xs font-bold text-white bg-brand hover:bg-indigo-700 shadow-xs transition shrink-0 self-start sm:self-auto" onclick="openPortalCreateKeyModal()">+ 创建 API Key</button>
             </div>

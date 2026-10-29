@@ -16,8 +16,8 @@ def make_response(retcode, retdesc, data, succ, error_code=None):
     try:
         if setting('api_tip_enabled', '1') == '1':
             response['_tip'] = {
-                'author': setting('api_tip_author', 'ucmao'),
-                'website': setting('api_tip_website', 'https://github.com/ucmao/media-parser'),
+                'author': setting('api_tip_author', 'G2560302707'),
+                'website': setting('api_tip_website', 'https://github.com/G2560302707/media-parser/tree/main'),
                 'notice': setting('api_tip_notice', '本接口由开源项目 media-parser 提供服务')
             }
     except Exception:

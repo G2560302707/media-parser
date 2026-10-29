@@ -8,7 +8,7 @@
 
 如果你发现了安全漏洞，请不要在公开的 GitHub Issue、Discussion、Pull Request 或其他公开渠道中披露漏洞细节。
 
-请优先使用本仓库 **Security** 页面中的 **Report a vulnerability** 功能提交私密报告。如果该入口暂不可用，请发送邮件至 [leoucmao@gmail.com](mailto:leoucmao@gmail.com)，并在邮件主题中注明“media-parser 安全漏洞”。
+请优先使用本仓库 **Security** 页面中的 **Report a vulnerability** 功能提交私密报告。如果该入口暂不可用，请发送邮件至 [guo2560302707@gmail.com](mailto:guo2560302707@gmail.com)，并在邮件主题中注明“media-parser 安全漏洞”。
 
 报告中建议包含：
 
@@ -30,4 +30,4 @@
 
 请以善意、最小影响的方式进行测试，不要破坏服务、访问无权获取的数据、影响第三方平台，或对公开部署实例进行自动化扫描和压力测试。
 
-普通缺陷、功能建议和不涉及安全影响的问题，请通过 [GitHub Issues](https://github.com/ucmao/media-parser/issues) 提交。
+普通缺陷、功能建议和不涉及安全影响的问题，请发送邮件至 [guo2560302707@gmail.com](mailto:guo2560302707@gmail.com)。

@@ -56,3 +56,16 @@ htmlcov/
 *.mp4
 *.avi
 *.mp3
+
+# 本地 AI 技能配置（含指向本机的软链）
+.agents/
+.claude/
+skills-lock.json
+
+# 运行时产物 & 本地测试数据
+downloads/
+测试集
+shortcuts/testset-results.json
+
+# 快捷指令编译产物（源码 .cherri 保留）
+shortcuts/*.shortcut

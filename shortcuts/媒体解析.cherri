@@ -1,0 +1,495 @@
+#include 'actions/web'
+#include 'actions/photos'
+#include 'actions/documents'
+#include 'actions/text'
+#include 'actions/sharing'
+#include 'actions/calendar'
+
+#define name 媒体解析
+#define color violet
+#define glyph sparkles
+#define from sharesheet, notifications
+#define inputs text, url, webpage, richtext
+#define noinput getclipboard
+#define mac false
+
+comment('媒体解析 1.5
+从分享口令直接进相册，不用在网页上停一下。
+每次运行都会往「媒体解析/诊断日志.txt」记一笔，出事能翻。')
+
+@base = "https://after7lab.cloud:81"
+@saved = 0
+@failed = 0
+
+/* ── 诊断日志：固定一个文件，每次运行追加 ── */
+createFolder("媒体解析")
+@now = currentDate()
+@day = formatDate(@now, 'Custom', "yyyy-MM-dd")
+@stamp = formatTimestamp(@now, 'Custom', 'None', "yyyy-MM-dd HH:mm:ss")
+@logPath = "媒体解析/诊断日志.txt"
+
+@logFile = getFile("媒体解析/诊断日志.txt", nil, false)
+@logExists = "是"
+if !@logFile {
+    @logExists = "否"
+}
+if @logExists == "否" {
+    @header = "媒体解析 · 诊断日志 {@day}\n"
+    saveFile("媒体解析/诊断日志.txt", @header, true)
+}
+
+@log = "[{@stamp}] ===== 开始运行（媒体解析 1.5） =====\n"
+appendToFile("媒体解析/诊断日志.txt", @log)
+
+/* ── 密钥：记在快捷指令文件夹里，更新指令也不会冲掉 ── */
+@keyFile = getFile("媒体解析/api-key.txt", nil, false)
+@keyText = getText(@keyFile)
+@key = trimWhitespace(@keyText)
+@keyLen = count(@key, 'Characters')
+@keyPrefix = "否"
+if @key beginsWith "mp-" {
+    @keyPrefix = "是"
+}
+@log = "[{@stamp}] 密钥：长度={@keyLen} mp-前缀={@keyPrefix}\n"
+appendToFile("媒体解析/诊断日志.txt", @log)
+
+if !@key {
+    @log = "[{@stamp}] 没有找到密钥，进入首次配置\n"
+    appendToFile("媒体解析/诊断日志.txt", @log)
+    menu "先把密钥收下，只要这一次。" {
+        item "去网站注册，领一把新的":
+            openURL("{@base}/auth/register?from=shortcut")
+            stop()
+        item "我有账号，去控制台复制":
+            openURL("{@base}/console/welcome?from=shortcut")
+            stop()
+        item "已经复制好了，现在贴进来":
+            @board = getClipboard()
+            @clip = getText(@board)
+            @hint = ""
+            if @clip beginsWith "mp-" {
+                @hint = trimWhitespace(@clip)
+            }
+            @pasted = prompt("把 mp- 开头的密钥贴在这里", nil, "{@hint}")
+            @key = trimWhitespace("{@pasted}")
+            if @key beginsWith "mp-" {
+                saveFile("媒体解析/api-key.txt", @key, true)
+                alert("记住啦。下次从抖音、小红书点分享，选「媒体解析」就行。", "收好了")
+            } else {
+                alert("这串不太像密钥。要 mp- 开头的那一长条，再贴一次。", "再看一眼")
+                stop()
+            }
+    }
+}
+
+/* ── 分享内容：分享表单优先，否则用剪贴板，再不行就问 ── */
+@inputText = getText(ShortcutInput)
+@share = trimWhitespace(@inputText)
+@shareLen = count(@share, 'Characters')
+@log = "[{@stamp}] 输入：长度={@shareLen}\n[{@stamp}] 输入原文开始>>>\n{@share}\n[{@stamp}] <<<输入原文结束\n"
+appendToFile("媒体解析/诊断日志.txt", @log)
+
+if !@share {
+    menu "还没东西可存。先分享，或办点小事。" {
+        item "把分享口令贴进来":
+            @typed = prompt("链接或整段口令，原样贴过来就行", nil, "{Clipboard}")
+            @share = trimWhitespace("{@typed}")
+        item "换一把密钥":
+            @pasted = prompt("把新的 mp- 密钥贴在这里", nil, "{Clipboard}")
+            @key = trimWhitespace("{@pasted}")
+            if @key beginsWith "mp-" {
+                saveFile("媒体解析/api-key.txt", @key, true)
+                alert("新密钥换上了。再从 App 里分享一次就能用。", "换好了")
+            } else {
+                alert("这串不太像密钥。要 mp- 开头的那一长条。", "再看一眼")
+            }
+            stop()
+        item "翻翻诊断日志":
+            @histFile = getFile("媒体解析/诊断日志.txt", nil, false)
+            if @histFile {
+                quicklook(@histFile)
+            } else {
+                alert("日志还没写过呢：{@logPath}", "还没有日志")
+            }
+            stop()
+        item "打开网站控制台":
+            openURL("{@base}/console")
+            stop()
+    }
+}
+
+if !@share {
+    alert("我这边是空的。去抖音或小红书点分享，选「媒体解析」。", "先分享一次")
+    stop()
+}
+
+showNotification("正在捞进相册", "媒体解析", false)
+
+/* ── 解析 ── */
+@log = "[{@stamp}] 请求：POST {@base}/api/v1/parse\n"
+appendToFile("媒体解析/诊断日志.txt", @log)
+
+@raw = jsonRequest("{@base}/api/v1/parse", "POST", {
+    "text": "{@share}"
+}, {
+    "Authorization": "Bearer {@key}",
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+})
+@rawText = getText(@raw)
+@rawLen = count(@rawText, 'Characters')
+/* iOS 把 JSON 对象当成「没有值」，所以只拿字符串判断成败 */
+@result = getDictionary(@raw)
+@retcodeRaw = getValue(@result, "retcode")
+@retcodeText = "{@retcodeRaw}"
+@succRaw = getValue(@result, "succ")
+@succText = "{@succRaw}"
+@codeRaw = getValue(@result, "error_code")
+@codeText = "{@codeRaw}"
+@descRaw = getValue(@result, "retdesc")
+@descText = "{@descRaw}"
+@data = getValue(@result, "data")
+@payload = getDictionary(@data)
+@platformRaw = getValue(@payload, "platform")
+@platform = "{@platformRaw}"
+
+@isJson = "否"
+if @rawText contains "retcode" {
+    @isJson = "是"
+}
+if @retcodeText {
+    @isJson = "是"
+}
+@log = "[{@stamp}] 返回：是JSON={@isJson} 原始长度={@rawLen} retcode={@retcodeText} succ={@succText} code={@codeText} platform={@platform} desc={@descText}\n"
+appendToFile("媒体解析/诊断日志.txt", @log)
+
+if @isJson == "否" {
+    @log = "[{@stamp}] 返回不是 JSON，原始内容：{@rawText}\n"
+    appendToFile("媒体解析/诊断日志.txt", @log)
+    alert("服务器没回正常结果，可能是网络拦了一下，或服务在打盹。\n原始内容已写进：{@logPath}", "这次没接到话")
+    @logFile = getFile("媒体解析/诊断日志.txt", nil, false)
+    menu "然后呢？" {
+        item "打开诊断日志":
+            quicklook(@logFile)
+        item "复制诊断日志":
+            @logText = getText(@logFile)
+            setClipboard(@logText)
+            alert("日志已经在剪贴板里了。", "拿走吧")
+        item "打开网站控制台":
+            openURL("{@base}/console")
+        item "算了，先这样":
+            nothing()
+    }
+    stop()
+}
+
+@ok = "否"
+if @retcodeText == "200" {
+    @ok = "是"
+}
+if @succText == "true" {
+    @ok = "是"
+}
+if @succText == "1" {
+    @ok = "是"
+}
+if @succText == "是" {
+    @ok = "是"
+}
+if @platform {
+    @ok = "是"
+}
+
+if @ok == "否" {
+    if @codeText == "RATE_LIMITED" {
+        @ok = "重试"
+    }
+    if @codeText == "PLATFORM_RATE_LIMITED" {
+        @ok = "重试"
+    }
+}
+
+if @ok == "重试" {
+    @log = "[{@stamp}] 触发限流，1 秒后重试一次\n"
+    appendToFile("媒体解析/诊断日志.txt", @log)
+    wait(1)
+    @raw = jsonRequest("{@base}/api/v1/parse", "POST", {
+        "text": "{@share}"
+    }, {
+        "Authorization": "Bearer {@key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    })
+    @rawText = getText(@raw)
+    @result = getDictionary(@raw)
+    @retcodeRaw = getValue(@result, "retcode")
+    @retcodeText = "{@retcodeRaw}"
+    @succRaw = getValue(@result, "succ")
+    @succText = "{@succRaw}"
+    @codeRaw = getValue(@result, "error_code")
+    @codeText = "{@codeRaw}"
+    @descRaw = getValue(@result, "retdesc")
+    @descText = "{@descRaw}"
+    @data = getValue(@result, "data")
+    @payload = getDictionary(@data)
+    @platformRaw = getValue(@payload, "platform")
+    @platform = "{@platformRaw}"
+    @ok = "否"
+    if @retcodeText == "200" {
+        @ok = "是"
+    }
+    if @succText == "true" {
+        @ok = "是"
+    }
+    if @succText == "1" {
+        @ok = "是"
+    }
+    if @succText == "是" {
+        @ok = "是"
+    }
+    if @platform {
+        @ok = "是"
+    }
+    @log = "[{@stamp}] 重试结果：retcode={@retcodeText} succ={@succText} code={@codeText} platform={@platform} desc={@descText} ok={@ok}\n"
+    appendToFile("媒体解析/诊断日志.txt", @log)
+}
+
+if !@descText {
+    @descText = "这次没解析出来。"
+}
+
+@log = "[{@stamp}] 判定：ok={@ok} retcode={@retcodeText} succ={@succText} platform={@platform}\n"
+appendToFile("媒体解析/诊断日志.txt", @log)
+
+if @ok == "否" {
+    @log = "[{@stamp}] 结束：解析失败 code={@codeText}\n"
+    appendToFile("媒体解析/诊断日志.txt", @log)
+
+    if @codeText == "INSUFFICIENT_CREDITS" {
+        alert("次数用光了。去控制台让管理员加点，加完不用重装，再分享一次就好。\n\n错误码：{@codeText}\n日志：{@logPath}", "次数见底了")
+        openURL("{@base}/console")
+        stop()
+    }
+    if @codeText == "ACCOUNT_EXPIRED" {
+        alert("账号到期了。去控制台让管理员续上，续完再分享一次。\n\n错误码：{@codeText}\n日志：{@logPath}", "该续期啦")
+        openURL("{@base}/console")
+        stop()
+    }
+    if @codeText == "API_KEY_DISABLED" {
+        alert("这把密钥或账号被停用了。去控制台看一眼，或换一把新的。\n\n错误码：{@codeText}\n日志：{@logPath}", "暂时用不了")
+        openURL("{@base}/console")
+        stop()
+    }
+    if @codeText == "INVALID_API_KEY" || @codeText == "API_KEY_REQUIRED" {
+        @log = "[{@stamp}] 服务器不认这把密钥，进入更换流程\n"
+        appendToFile("媒体解析/诊断日志.txt", @log)
+        menu "这把密钥对不上。要换一把吗？" {
+            item "现在贴新密钥":
+                @pasted = prompt("把 mp- 开头的密钥贴在这里", nil, "{Clipboard}")
+                @key = trimWhitespace("{@pasted}")
+                if @key beginsWith "mp-" {
+                    saveFile("媒体解析/api-key.txt", @key, true)
+                    alert("换好了。再从 App 里分享一次就能用。", "收好了")
+                } else {
+                    alert("这串不太像密钥。要 mp- 开头的那一长条。", "再看一眼")
+                }
+            item "去控制台复制":
+                openURL("{@base}/console/welcome?from=shortcut")
+            item "算了，先这样":
+                nothing()
+        }
+        stop()
+    }
+    if @codeText == "INVALID_TEXT" || @codeText == "URL_NOT_FOUND" || @codeText == "TEXT_TOO_LONG" {
+        alert("没认出分享链接。请重新复制整段口令后再试。\n\n错误码：{@codeText}\n日志：{@logPath}", "链接走丢了")
+        stop()
+    }
+
+    alert("原因：{@descText}\n\n错误码：{@codeText}\n时间：{@stamp}\n诊断日志：{@logPath}", "这次没解析出来")
+    @logFile = getFile("媒体解析/诊断日志.txt", nil, false)
+    menu "然后呢？" {
+        item "打开诊断日志":
+            quicklook(@logFile)
+        item "复制诊断日志":
+            @logText = getText(@logFile)
+            setClipboard(@logText)
+            alert("日志已经在剪贴板里了。", "拿走吧")
+        item "打开网站控制台":
+            openURL("{@base}/console")
+        item "算了，先这样":
+            nothing()
+    }
+    stop()
+}
+
+/* ── 拆开 data（作者也是字典，不能用「如果没有值」判断） ── */
+@authorBoxRaw = getValue(@payload, "author")
+@authorBox = getDictionary(@authorBoxRaw)
+@authorRaw = getValue(@authorBox, "nickname")
+@author = "{@authorRaw}"
+
+@videos = getValue(@payload, "video_list")
+@videoCount = count(@videos)
+@images = getValue(@payload, "image_list")
+@imageCount = count(@images)
+@audioRaw = getValue(@payload, "audio_url")
+@audio = "{@audioRaw}"
+@oneVideoRaw = getValue(@payload, "video_url")
+@oneVideo = "{@oneVideoRaw}"
+@audioFlag = "无"
+if @audio beginsWith "http" {
+    @audioFlag = "有"
+}
+
+@log = "[{@stamp}] 内容：平台={@platform} 作者={@author} 视频列表={@videoCount} 单视频={@oneVideo} 图片={@imageCount} 音频={@audioFlag}\n"
+appendToFile("媒体解析/诊断日志.txt", @log)
+
+/* ── 写入相册「最近项目」。空字符串在 iOS 里也算「有值」，必须确认以 http 开头再下载 ── */
+@seq = 0
+if @oneVideo beginsWith "http" {
+    @seq += 1
+    @log = "[{@stamp}] 单视频下载：{@oneVideo}\n"
+    appendToFile("媒体解析/诊断日志.txt", @log)
+    @videoFile = downloadURL(@oneVideo)
+    @ok = "否"
+    if @videoFile {
+        savePhoto(@videoFile)
+        @saved += 1
+        @ok = "是"
+    } else {
+        @failed += 1
+    }
+    @log = "[{@stamp}] 单视频结果：下载并保存={@ok}\n"
+    appendToFile("媒体解析/诊断日志.txt", @log)
+}
+
+if @videoCount > 0 {
+    for video in @videos {
+        @seq += 1
+        @videoURL = "{@video}"
+        if @videoURL == @oneVideo {
+            @log = "[{@stamp}] 视频{@seq} 与单视频相同，跳过\n"
+            appendToFile("媒体解析/诊断日志.txt", @log)
+        } else {
+            if @videoURL beginsWith "http" {
+                @log = "[{@stamp}] 视频{@seq} 下载：{@videoURL}\n"
+                appendToFile("媒体解析/诊断日志.txt", @log)
+                @videoFile = downloadURL(@videoURL)
+                @ok = "否"
+                if @videoFile {
+                    savePhoto(@videoFile)
+                    @saved += 1
+                    @ok = "是"
+                } else {
+                    @failed += 1
+                }
+                @log = "[{@stamp}] 视频{@seq} 结果：下载并保存={@ok}\n"
+                appendToFile("媒体解析/诊断日志.txt", @log)
+            } else {
+                @log = "[{@stamp}] 视频{@seq} 不是 http 地址，跳过：{@videoURL}\n"
+                appendToFile("媒体解析/诊断日志.txt", @log)
+            }
+        }
+    }
+}
+
+if @imageCount > 0 {
+    for item in @images {
+        @photoURL = "{@item}"
+        @log = "[{@stamp}] 图片项原文：{@photoURL}\n"
+        appendToFile("媒体解析/诊断日志.txt", @log)
+        if @photoURL beginsWith "http" {
+            @log = "[{@stamp}] 图片下载：{@photoURL}\n"
+            appendToFile("媒体解析/诊断日志.txt", @log)
+            @photoFile = downloadURL(@photoURL)
+            @ok = "否"
+            if @photoFile {
+                savePhoto(@photoFile)
+                @saved += 1
+                @ok = "是"
+            } else {
+                @failed += 1
+            }
+            @log = "[{@stamp}] 图片结果：下载并保存={@ok}\n"
+            appendToFile("媒体解析/诊断日志.txt", @log)
+        } else {
+            @itemDict = getDictionary(@item)
+            @liveRaw = getValue(@itemDict, "live_photo_url")
+            @live = "{@liveRaw}"
+            @stillRaw = getValue(@itemDict, "url")
+            @still = "{@stillRaw}"
+            @mediaURL = ""
+            if @still beginsWith "http" {
+                @mediaURL = "{@still}"
+            }
+            if @live beginsWith "http" {
+                @mediaURL = "{@live}"
+            }
+            if @mediaURL beginsWith "http" {
+                @log = "[{@stamp}] 实况/图下载：{@mediaURL}\n"
+                appendToFile("媒体解析/诊断日志.txt", @log)
+                @mediaFile = downloadURL(@mediaURL)
+                @ok = "否"
+                if @mediaFile {
+                    savePhoto(@mediaFile)
+                    @saved += 1
+                    @ok = "是"
+                } else {
+                    @failed += 1
+                }
+                @log = "[{@stamp}] 实况/图结果：下载并保存={@ok}\n"
+                appendToFile("媒体解析/诊断日志.txt", @log)
+            } else {
+                @log = "[{@stamp}] 图片项没有 http 地址，跳过 live={@live} still={@still}\n"
+                appendToFile("媒体解析/诊断日志.txt", @log)
+            }
+        }
+    }
+}
+
+if @audio beginsWith "http" {
+    @log = "[{@stamp}] 音频下载：{@audio}\n"
+    appendToFile("媒体解析/诊断日志.txt", @log)
+    @audioFile = downloadURL(@audio)
+    @ok = "否"
+    if @audioFile {
+        saveFile("媒体解析/音频.m4a", @audioFile, true)
+        @saved += 1
+        @ok = "是"
+    } else {
+        @failed += 1
+    }
+    @log = "[{@stamp}] 音频结果：下载并保存={@ok}\n"
+    appendToFile("媒体解析/诊断日志.txt", @log)
+}
+
+@log = "[{@stamp}] 结束：保存={@saved} 失败={@failed}\n"
+appendToFile("媒体解析/诊断日志.txt", @log)
+
+if @saved < 1 {
+    alert("相册这边没接到图或视频。文案还在，可以去网页再看一眼。\n\n日志：{@logPath}", "没有可存的媒体")
+    @logFile = getFile("媒体解析/诊断日志.txt", nil, false)
+    menu "然后呢？" {
+        item "打开诊断日志":
+            quicklook(@logFile)
+        item "复制诊断日志":
+            @logText = getText(@logFile)
+            setClipboard(@logText)
+            alert("日志已经在剪贴板里了。", "拿走吧")
+        item "去网页看看":
+            openURL("{@base}/s")
+        item "算了，先这样":
+            nothing()
+    }
+    stop()
+}
+
+@who = "{@platform}"
+if @author {
+    @who = "{@platform} · {@author}"
+}
+@note = "{@who}"
+if @failed > 0 {
+    @note = "{@who}，有 {@failed} 项没捞下来"
+}
+showNotification("{@note}", "收进相册啦", true)

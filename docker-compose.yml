@@ -26,6 +26,8 @@ services:
       - SECRET_KEY=${SECRET_KEY:-}
       - DATABASE_PATH=/app/data/media_parser.db
       - TRUST_PROXY_HEADERS=${TRUST_PROXY_HEADERS:-false}
+      # Cookie 采集工具免登录推送令牌（留空则推送通道开放，公网部署建议配置随机值）
+      - COOKIE_PUSH_TOKEN=${COOKIE_PUSH_TOKEN:-}
       # 纯 API / 微服务模式（开启后不挂载 Web UI，全接口免 API Key 直接调用且不写请求日志）
       - API_ONLY=${API_ONLY:-false}
       # Cookie 触发的动态代理提取地址

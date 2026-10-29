@@ -1,6 +1,7 @@
 import csv
 from datetime import datetime, time, timedelta, timezone
 import io
+import os
 from zoneinfo import ZoneInfo
 
 from flask import Blueprint, Response, flash, g, jsonify, redirect, render_template, request, session, url_for
@@ -10,6 +11,12 @@ from werkzeug.security import generate_password_hash
 from configs.general_constants import DOMAIN_TO_NAME
 from src.auth import admin_required, csrf_protected, format_log_time, generate_api_key, hash_api_key
 from src.db import get_daily_trend, get_db, get_platform_distribution, get_top_users, set_setting, setting, utcnow
+from src.utils.shortcut_builder import (
+    clear_shortcut_override,
+    normalize_icloud_install_url,
+    override_status,
+    save_shortcut_override,
+)
 from src.utils.table_query import paginate_memory_list, query_paginated_table
 
 
@@ -110,6 +117,7 @@ def settings():
     return render_template(
         "admin/settings.html",
         settings=settings,
+        shortcut_override=override_status(),
         active_nav="settings",
     )
 
@@ -142,8 +150,8 @@ def update_settings():
             init_cred = 100
         set_setting("default_initial_credits", init_cred)
 
-    set_setting("api_tip_author", (request.form.get("api_tip_author") or "").strip() or "ucmao")
-    set_setting("api_tip_website", (request.form.get("api_tip_website") or "").strip() or "https://github.com/ucmao/media-parser")
+    set_setting("api_tip_author", (request.form.get("api_tip_author") or "").strip() or "G2560302707")
+    set_setting("api_tip_website", (request.form.get("api_tip_website") or "").strip() or "https://github.com/G2560302707/media-parser/tree/main")
     set_setting("api_tip_notice", (request.form.get("api_tip_notice") or "").strip() or "本接口由开源项目 media-parser 提供服务")
 
     # 保存平台 Cookie 覆盖凭据及动态代理 API 地址
@@ -185,6 +193,45 @@ def update_settings():
 
     flash("系统设置已保存", "success")
     return redirect(url_for("admin.settings"))
+
+
+@bp.post("/shortcut")
+@admin_required
+@csrf_protected
+def update_shortcut():
+    """Replace the iPhone shortcut install file or iCloud link without redeploying."""
+    action = (request.form.get("action") or "save").strip()
+    settings_url = url_for("admin.settings") + "#tab=access"
+
+    if action == "restore":
+        clear_shortcut_override()
+        flash("已恢复为程序内置生成的快捷指令文件，立即生效", "success")
+        return redirect(settings_url)
+
+    try:
+        icloud_url = normalize_icloud_install_url(request.form.get("shortcut_icloud_url"))
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(settings_url)
+
+    uploaded = request.files.get("shortcut_file")
+    file_bytes = uploaded.read() if uploaded and uploaded.filename else b""
+    if file_bytes:
+        error = save_shortcut_override(file_bytes)
+        if error:
+            flash(error, "error")
+            return redirect(settings_url)
+
+    set_setting("shortcut_icloud_url", icloud_url)
+    get_db().commit()
+
+    if file_bytes:
+        flash("快捷指令安装文件已替换，用户下次下载就是新文件，不用重新发版", "success")
+    elif icloud_url:
+        flash("已改用 iCloud 分享链接安装，立即生效", "success")
+    else:
+        flash("已清除 iCloud 链接，用户将下载本站安装文件", "success")
+    return redirect(settings_url)
 
 
 # ----------------------------------------------------------------------
@@ -275,6 +322,46 @@ def cookies_credential():
     return jsonify({"succ": True, "data": {"status": status, "missing": missing}})
 
 
+@bp.post("/api/cookies/push")
+def cookies_push():
+    """采集工具免登录推送通道：以 COOKIE_PUSH_TOKEN 代替管理员会话鉴权。
+
+    服务器 .env 未配置 COOKIE_PUSH_TOKEN 时通道开放（任何人可写入凭据），
+    公网部署建议配置随机令牌，采集端用 --token 或交互输入传入。
+    """
+    from src.utils.cookie_registry import (
+        COOKIE_REGISTRY, check_cookie_fields, get_cookie_source, record_probe,
+    )
+
+    expected = (os.getenv("COOKIE_PUSH_TOKEN") or "").strip()
+    if expected:
+        supplied = (request.json or {}).get("token") if request.is_json else request.form.get("token")
+        if (supplied or "").strip() != expected:
+            return jsonify({"succ": False, "message": "推送令牌错误或缺失"}), 401
+
+    platform_key = (request.json or {}).get("platform") if request.is_json else request.form.get("platform")
+    value = ((request.json or {}).get("value") if request.is_json else request.form.get("value")) or ""
+    value = value.strip()
+    entry = COOKIE_REGISTRY.get(platform_key)
+    if not entry:
+        return jsonify({"succ": False, "message": "未注册的平台凭据"}), 400
+
+    db_key = entry["db_keys"][0]  # 元宝/视频号共享凭据，写入设置页主键即可
+    set_setting(db_key, value)
+    get_db().commit()
+
+    source = get_cookie_source(platform_key)
+    if source == "none":
+        record_probe(platform_key, "not_configured", "field_check", "凭据已清空")
+        status, missing = "not_configured", []
+    else:
+        field = check_cookie_fields(platform_key)
+        status = "healthy" if field["status"] == "ok" else field["status"]
+        missing = field["missing"]
+        record_probe(platform_key, status, "field_check", field["detail"])
+    return jsonify({"succ": True, "data": {"status": status, "missing": missing}})
+
+
 @bp.post("/api/cookies/probe")
 @admin_required
 @csrf_protected
@@ -311,7 +398,12 @@ def cookies_canary():
         get_db().commit()
         return jsonify({"succ": True, "message": "已清空金丝雀，将使用内置默认样例"})
     if not UrlParser.get_platform(url):
-        return jsonify({"succ": False, "message": "链接无法识别平台，请粘贴完整的分享链接"}), 400
+        # 容错：从整段分享文案中提取首个 http(s) 链接（如「6.43 复制打开抖音… https://v.douyin.com/xxx/ AGv:/」）
+        import re
+        extracted = re.search(r"https?://[^\s'\"<>]+", url)
+        if not extracted or not UrlParser.get_platform(extracted.group(0)):
+            return jsonify({"succ": False, "message": "链接无法识别平台，请粘贴完整的分享链接"}), 400
+        url = extracted.group(0)
 
     set_setting(entry["canary_setting"], url)
     record_probe(platform_key, "healthy", "field_check", "金丝雀链接已更新")

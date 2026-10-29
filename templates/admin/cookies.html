@@ -137,7 +137,7 @@
                                 <label class="text-xs text-slate-500 shrink-0 pt-2" for="canary-input-{{ item.platform_key }}">金丝雀链接</label>
                                 <div class="flex-1 space-y-1.5">
                                     <input type="text" id="canary-input-{{ item.platform_key }}" value="{{ item.canary_url or '' }}"
-                                        placeholder="粘贴一条用于巡检的分享短链（留空使用内置默认样例）"
+                                        placeholder="粘贴分享短链或整段分享文案均可（留空使用内置默认样例）"
                                         class="w-full px-3 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-white">
                                     <p class="text-xs text-slate-400">探针会用这条链接做「带凭据 / 无凭据」双跑对照。若链接作品被删除，探针会标记为探针失败而非凭据失效。</p>
                                     <p id="canary-hint-{{ item.platform_key }}" class="hidden text-xs text-rose-600"></p>

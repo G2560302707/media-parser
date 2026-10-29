@@ -29,6 +29,7 @@
 
             <form method="post" class="space-y-4">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="from" value="{{ request.form.get('from', request.args.get('from', '')) }}">
                 <div class="space-y-1.5">
                     <label class="block text-xs font-semibold text-slate-700">用户名</label>
                     <input name="username" placeholder="请输入用户名" autocomplete="username" required autofocus class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-white text-slate-900">
@@ -49,7 +50,7 @@
                         <span>保持 30 天登录</span>
                     </label>
                     {% if registration_enabled %}
-                    <a href="{{ url_for('auth.register') }}" class="text-xs font-semibold text-brand hover:underline">申请注册新账号</a>
+                    <a href="{{ url_for('auth.register', **({'from': request.args.get('from') or request.form.get('from')} if (request.args.get('from') or request.form.get('from')) else {})) }}" class="text-xs font-semibold text-brand hover:underline">申请注册新账号</a>
                     {% endif %}
                 </div>
                 <div class="pt-2">
