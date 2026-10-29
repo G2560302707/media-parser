@@ -72,6 +72,8 @@ def create_app(config=None):
     app.extensions["proxy_manager"] = manager
     if not app.testing:
         manager.start()
+        from src.utils.cookie_registry import start_auto_inspector
+        start_auto_inspector()
 
     # 跨域配置（仅对 /api/* 接口开放，默认允许所有来源，支持通过环境变量 CORS_ORIGINS 自定义）
     cors_origins_raw = (os.getenv('CORS_ORIGINS') or '*').strip()
@@ -99,4 +101,4 @@ def create_app(config=None):
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8051)
+    app.run(host='0.0.0.0', port=int(os.getenv('WEB_PORT', '8051')))

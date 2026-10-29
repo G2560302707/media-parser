@@ -22,11 +22,14 @@ RUN addgroup --system app && adduser --system --ingroup app app
 
 # 复制项目所有代码并设置基础读取权限兜底
 COPY --chown=app:app . /app/
-RUN chmod +x /app/docker-entrypoint.sh && \
+# 兜底修正 Windows 检出可能带入的 CRLF 行尾，保证入口脚本可在容器内执行
+RUN sed -i "s/\r$//" /app/docker-entrypoint.sh && \
+    chmod +x /app/docker-entrypoint.sh && \
     chmod -R a+rX /app
 
-# 开放 8051 端口
+# 声明默认端口（实际监听由 WEB_PORT 决定，默认 8051）
 EXPOSE 8051
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["gunicorn", "--workers", "2", "--threads", "4", "--worker-class", "gthread", "--timeout", "120", "--keep-alive", "5", "--bind", "0.0.0.0:8051", "app:app"]
+# WEB_PORT 可配置容器内监听端口（默认 8051）
+CMD gunicorn --workers 2 --threads 4 --worker-class gthread --timeout 120 --keep-alive 5 --bind "0.0.0.0:${WEB_PORT:-8051}" app:app

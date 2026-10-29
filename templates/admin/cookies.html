@@ -1,0 +1,369 @@
+{% extends 'base_console.html' %}
+{% block title %}凭据巡检 · 管理员后台{% endblock %}
+{% block page_title %}凭据巡检{% endblock %}
+{% block console_content %}
+<main class="max-w-6xl mx-auto space-y-6">
+
+    <!-- 标题行：h1 + 副行 one finding + 主操作 -->
+    <div class="flex items-start justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Cookie 凭据巡检</h1>
+            <p class="text-sm mt-1.5 {{ 'text-rose-700' if overview.finding else 'text-slate-500' }}">
+                {% if overview.finding %}
+                    {{ overview.finding }}
+                {% else %}
+                    {{ overview.summary.healthy }} 项凭据有效，各平台能力正常开放。
+                {% endif %}
+            </p>
+        </div>
+        <div class="flex items-center gap-3 shrink-0 pt-1">
+            <span id="freshness" class="text-xs text-slate-400 num">巡检于 {{ overview.generated_at[:16].replace('T', ' ') }}</span>
+            <button type="button" id="btn-check-all" onclick="checkAll(this)"
+                class="inline-flex items-center gap-2 px-4 h-9 rounded-lg text-sm font-semibold text-white bg-slate-900 hover:bg-slate-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                {{ icon('shield', 'w-4 h-4') }}
+                <span>全部重新巡检</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 状态总览：一个容器分格，数字即界面 -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 bg-white rounded-xl border border-slate-200/80 divide-x divide-y sm:divide-y-0 divide-slate-200/80 overflow-hidden">
+        <div class="px-5 py-4">
+            <div class="text-xs text-slate-500">有效</div>
+            <div class="text-2xl text-slate-900 num mt-0.5">{{ overview.summary.healthy }}</div>
+        </div>
+        <div class="px-5 py-4">
+            <div class="text-xs text-slate-500">疑似失效</div>
+            <div class="text-2xl num mt-0.5 {{ 'text-rose-700' if overview.summary.stale else 'text-slate-900' }}">{{ overview.summary.stale }}</div>
+        </div>
+        <div class="px-5 py-4">
+            <div class="text-xs text-slate-500">未配置</div>
+            <div class="text-2xl num mt-0.5 {{ 'text-amber-700' if overview.summary.not_configured else 'text-slate-900' }}">{{ overview.summary.not_configured }}</div>
+        </div>
+        <div class="px-5 py-4">
+            <div class="text-xs text-slate-500">字段缺失</div>
+            <div class="text-2xl num mt-0.5 {{ 'text-amber-700' if overview.summary.incomplete else 'text-slate-900' }}">{{ overview.summary.incomplete }}</div>
+        </div>
+    </div>
+
+    <!-- 凭据明细矩阵 -->
+    <section class="bg-white rounded-xl border border-slate-200/80 p-5 sm:p-6">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                {{ icon('key', 'w-4 h-4 text-brand') }}
+                凭据明细
+            </h2>
+            <span class="text-xs text-slate-400">按强制度与状态排序 · 配置于系统设置，保存即生效</span>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-xs text-slate-400">
+                        <th class="font-normal py-2.5 pr-4">平台</th>
+                        <th class="font-normal py-2.5 pr-4">类型</th>
+                        <th class="font-normal py-2.5 pr-4">来源</th>
+                        <th class="font-normal py-2.5 pr-4">覆盖能力</th>
+                        <th class="font-normal py-2.5 pr-4">状态</th>
+                        <th class="font-normal py-2.5 pr-4">最近验证</th>
+                        <th class="font-normal py-2.5 text-right">操作</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for item in overview.entries %}
+                    <tr id="row-{{ item.platform_key }}" class="align-middle hover:bg-slate-50/60 transition-colors" data-platform="{{ item.platform_key }}">
+                        <td class="py-3.5 pr-4">
+                            <div class="font-semibold text-slate-900">{{ item.platform_name }}</div>
+                            <div class="text-xs text-slate-400 mt-0.5">留空读取: <code>{{ item.env_keys[0] }}</code></div>
+                        </td>
+                        <td class="py-3.5 pr-4">
+                            <span class="text-xs text-slate-500">{{ item.severity_label }}</span>
+                        </td>
+                        <td class="py-3.5 pr-4">
+                            {% if item.source == 'database' %}
+                                <span class="text-xs text-slate-600">后台配置</span>
+                            {% elif item.source == 'env' %}
+                                <span class="text-xs text-slate-500">环境变量</span>
+                            {% else %}
+                                <span class="text-xs text-slate-300">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 pr-4">
+                            <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                                {% for cap in item.capabilities %}
+                                <span class="{{ 'text-slate-700' if cap.active else 'text-slate-300' }}">
+                                    {{ cap.name }} {{ '✓' if cap.active else '✗' }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="py-3.5 pr-4">
+                            {% set pill = {
+                                'healthy': 'bg-[#dcfae5] text-[#04250e]',
+                                'stale': 'bg-[#ffedea] text-[#831c1e]',
+                                'incomplete': 'bg-[#fffbeb] text-[#92400e]',
+                                'not_configured': 'bg-slate-100 text-slate-500',
+                                'probe_failed': 'bg-[#ffedea] text-[#831c1e]',
+                            }[item.status] %}
+                            <span role="status" aria-label="{{ item.platform_name }}凭据{{ item.status_label }}"
+                                class="status-pill inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ pill }}">{{ item.status_label }}</span>
+                            {% if item.status == 'incomplete' and item.field_check.missing %}
+                                <div class="text-xs text-slate-400 mt-1">缺: {{ item.field_check.missing | join('、') }}</div>
+                            {% elif item.last_probe and item.last_probe.detail %}
+                                <div class="probe-meta text-xs text-slate-400 mt-1 max-w-[220px] truncate" title="{{ item.last_probe.detail | string | truncate(200) }}">{{ item.last_probe.detail | string | truncate(48) }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 pr-4 text-xs text-slate-500 num">
+                            {% if item.last_probe %}
+                                {{ item.last_probe.probed_at[:16].replace('T', ' ') }}
+                            {% else %}
+                                <span class="text-slate-300">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 text-right whitespace-nowrap">
+                            <button type="button" onclick="probeCheck('{{ item.platform_key }}', this)"
+                                class="text-xs font-medium text-slate-700 hover:text-brand transition-colors px-2 py-1 rounded-md hover:bg-slate-100 disabled:opacity-50">验证</button>
+                            <button type="button" onclick="toggleCanary('{{ item.platform_key }}')"
+                                class="{{ 'text-xs font-semibold text-[#831c1e] hover:bg-[#ffedea]' if item.status == 'probe_failed' else 'text-xs font-medium text-slate-700 hover:text-brand hover:bg-slate-100' }} transition-colors px-2 py-1 rounded-md">
+                                {{ '更换金丝雀' if item.status == 'probe_failed' else '样例' }}</button>
+                            <button type="button" onclick="toggleCred('{{ item.platform_key }}')"
+                                class="text-xs font-medium text-slate-700 hover:text-brand transition-colors px-2 py-1 rounded-md hover:bg-slate-100"
+                                aria-expanded="false" aria-controls="cred-{{ item.platform_key }}">配置</button>
+                        </td>
+                    </tr>
+                    <tr id="canary-{{ item.platform_key }}" class="hidden bg-slate-50/70">
+                        <td colspan="7" class="px-2 py-3">
+                            <div class="flex items-start gap-3">
+                                <label class="text-xs text-slate-500 shrink-0 pt-2" for="canary-input-{{ item.platform_key }}">金丝雀链接</label>
+                                <div class="flex-1 space-y-1.5">
+                                    <input type="text" id="canary-input-{{ item.platform_key }}" value="{{ item.canary_url or '' }}"
+                                        placeholder="粘贴一条用于巡检的分享短链（留空使用内置默认样例）"
+                                        class="w-full px-3 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-white">
+                                    <p class="text-xs text-slate-400">探针会用这条链接做「带凭据 / 无凭据」双跑对照。若链接作品被删除，探针会标记为探针失败而非凭据失效。</p>
+                                    <p id="canary-hint-{{ item.platform_key }}" class="hidden text-xs text-rose-600"></p>
+                                </div>
+                                <button type="button" onclick="saveCanary('{{ item.platform_key }}', this)"
+                                    class="shrink-0 px-3.5 h-9 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-700 transition-colors">保存样例</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr id="cred-{{ item.platform_key }}" class="hidden bg-slate-50/70">
+                        <td colspan="7" class="px-2 py-3">
+                            <div class="flex items-start gap-3">
+                                <label class="text-xs text-slate-500 shrink-0 pt-2" for="cred-input-{{ item.platform_key }}">凭据</label>
+                                <div class="flex-1 space-y-1.5">
+                                    <textarea id="cred-input-{{ item.platform_key }}" rows="3" spellcheck="false"
+                                        placeholder="粘贴完整的 {{ item.platform_name }} Cookie（留空并保存即清空，回落到环境变量 {{ item.env_keys[0] }}）"
+                                        class="w-full px-3 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-white custom-scroll">{{ item.cookie_value }}</textarea>
+                                    <p id="cred-hint-{{ item.platform_key }}" class="text-xs text-slate-400">{{ item.config_hint }}</p>
+                                </div>
+                                <button type="button" onclick="saveCred('{{ item.platform_key }}', this)"
+                                    class="shrink-0 px-3.5 h-9 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-700 transition-colors">保存凭据</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <p class="text-xs text-slate-400 mt-4 leading-relaxed">
+            「验证」对该平台金丝雀链接做「带凭据 / 无凭据」双跑对照探针（真实出网，约 3-20 秒，同平台 5 分钟内防抖）；
+            「样例」设置金丝雀链接；「配置」行内编辑凭据，保存后自动执行本地字段校验，建议再点一次「验证」确认真实可用。
+            凭据同样可在 <a class="text-brand hover:underline" href="{{ url_for('admin.settings') }}#tab=cookies">系统设置 → 平台凭据</a> 中维护，保存即生效、无需重启服务。
+        </p>
+    </section>
+
+    <!-- 巡检记录 -->
+    <section class="bg-white rounded-xl border border-slate-200/80 p-5 sm:p-6">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                {{ icon('scroll', 'w-4 h-4 text-brand') }}
+                巡检记录
+            </h2>
+            <span class="text-xs text-slate-400">保存凭据与手动验证均记录在案</span>
+        </div>
+        <p class="text-xs text-slate-400 py-6 text-center">
+            暂无探针记录。凭据字段校验会在每次保存后自动执行一次，历史记录将在此展示。
+        </p>
+    </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const CSRF = {{ csrf_token() | tojson }};
+    const PILL_CLASS = {
+        healthy: 'status-pill inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#dcfae5] text-[#04250e]',
+        stale: 'status-pill inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#ffedea] text-[#831c1e]',
+        incomplete: 'status-pill inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#fffbeb] text-[#92400e]',
+        not_configured: 'status-pill inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500',
+        probe_failed: 'status-pill inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#ffedea] text-[#831c1e]',
+    };
+    const STATUS_TEXT = { healthy: '有效', stale: '疑似失效', incomplete: '字段缺失', not_configured: '未配置', probe_failed: '探针失败' };
+
+    function setPill(platformKey, status, note) {
+        const row = document.getElementById('row-' + platformKey);
+        if (!row) return;
+        const pill = row.querySelector('.status-pill');
+        if (pill) {
+            pill.className = PILL_CLASS[status] || PILL_CLASS.not_configured;
+            pill.textContent = STATUS_TEXT[status] || status;
+        }
+        const meta = row.querySelector('.probe-meta');
+        if (meta) {
+            meta.textContent = note || '';
+            meta.title = note || '';
+        }
+    }
+
+    function setRowProbing(platformKey, text) {
+        const row = document.getElementById('row-' + platformKey);
+        if (!row) return;
+        const pill = row.querySelector('.status-pill');
+        if (pill) {
+            pill.className = 'status-pill inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-400';
+            pill.textContent = text;
+        }
+    }
+
+    async function probeCheck(platformKey, btn) {
+        if (btn) btn.disabled = true;
+        setRowProbing(platformKey, '探针中…');
+        const tbody = document.querySelector('tbody');
+        if (tbody) tbody.setAttribute('aria-busy', 'true');
+        try {
+            const body = new FormData();
+            body.append('platform', platformKey);
+            body.append('csrf_token', CSRF);
+            const resp = await fetch('{{ url_for("admin.cookies_probe") }}', { method: 'POST', body });
+            if (resp.status === 429) {
+                // 防抖不是失败，恢复提示即可，不打状态。
+                setRowProbing(platformKey, '防抖跳过');
+                return;
+            }
+            const payload = await resp.json();
+            if (payload.succ) {
+                const d = payload.data || {};
+                const note = (d.detail && (d.detail.note || d.detail.error || d.detail.signal)) || '';
+                setPill(platformKey, d.status, note);
+            } else {
+                setPill(platformKey, 'probe_failed', payload.message);
+            }
+        } catch (e) {
+            setPill(platformKey, 'probe_failed', '探针请求失败，请稍后重试');
+        } finally {
+            if (btn) btn.disabled = false;
+            const tbody = document.querySelector('tbody');
+            if (tbody) tbody.removeAttribute('aria-busy');
+        }
+    }
+
+    async function checkAll(btn) {
+        btn.disabled = true;
+        const label = btn.querySelector('span');
+        const tbody = document.querySelector('tbody');
+        if (tbody) tbody.setAttribute('aria-busy', 'true');
+        if (label) label.textContent = '巡检中…';
+        const platforms = Array.from(document.querySelectorAll('tr[data-platform]')).map(r => r.dataset.platform);
+        const results = { healthy: 0, abnormal: 0 };
+        for (const key of platforms) {
+            // 未配置凭据的平台没有对照意义，跳过真探针。
+            const sourceCell = document.querySelector('#row-' + key + ' td:nth-child(3)');
+            if (sourceCell && sourceCell.textContent.trim() === '—') continue;
+            setRowProbing(key, '探针中…');
+            try {
+                const body = new FormData();
+                body.append('platform', key);
+                body.append('csrf_token', CSRF);
+                const resp = await fetch('{{ url_for("admin.cookies_probe") }}', { method: 'POST', body });
+                if (resp.status === 429) continue;  // 防抖跳过，不计入异常
+                const payload = await resp.json();
+                const status = payload.succ ? (payload.data.status || 'probe_failed') : 'probe_failed';
+                if (status === 'healthy') { results.healthy += 1; } else { results.abnormal += 1; }
+                setPill(key, status);
+            } catch (e) { results.abnormal += 1; setPill(key, 'probe_failed'); }
+        }
+        btn.disabled = false;
+        if (label) label.textContent = '全部重新巡检';
+        if (tbody) tbody.removeAttribute('aria-busy');
+    }
+
+    function toggleCanary(platformKey) {
+        const row = document.getElementById('canary-' + platformKey);
+        if (row) row.classList.toggle('hidden');
+    }
+
+    function toggleCred(platformKey) {
+        const row = document.getElementById('cred-' + platformKey);
+        if (!row) return;
+        row.classList.toggle('hidden');
+        const btn = row.previousElementSibling && row.previousElementSibling.querySelector('[aria-controls="cred-' + platformKey + '"]');
+        if (btn) btn.setAttribute('aria-expanded', row.classList.contains('hidden') ? 'false' : 'true');
+    }
+
+    async function saveCred(platformKey, btn) {
+        const input = document.getElementById('cred-input-' + platformKey);
+        const hint = document.getElementById('cred-hint-' + platformKey);
+        if (!input) return;
+        btn.disabled = true;
+        try {
+            const body = new FormData();
+            body.append('platform', platformKey);
+            body.append('value', input.value.trim());
+            body.append('csrf_token', CSRF);
+            const resp = await fetch('{{ url_for("admin.cookies_credential") }}', { method: 'POST', body });
+            const payload = await resp.json();
+            if (payload.succ) {
+                const status = payload.data.status;
+                const missing = payload.data.missing || [];
+                setPill(platformKey, status, missing.length ? '缺: ' + missing.join('、') : '字段校验通过，建议点击「验证」确认真实可用');
+                // 来源列更新为后台配置
+                const sourceCell = document.querySelector('#row-' + platformKey + ' td:nth-child(3)');
+                if (sourceCell) sourceCell.innerHTML = '<span class="text-xs text-slate-600">后台配置</span>';
+                if (hint) {
+                    hint.textContent = missing.length
+                        ? '已保存。缺少必需字段：' + missing.join('、') + '，补齐后建议点击「验证」。'
+                        : '已保存。字段校验通过，建议点击「验证」跑一次真实探针确认。';
+                    hint.className = 'text-xs ' + (missing.length ? 'text-[#92400e]' : 'text-[#04250e]');
+                }
+            } else if (hint) {
+                hint.textContent = payload.message || '保存失败，请稍后重试';
+                hint.className = 'text-xs text-rose-600';
+            }
+        } catch (e) {
+            if (hint) {
+                hint.textContent = '网络请求异常，保存失败';
+                hint.className = 'text-xs text-rose-600';
+            }
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function saveCanary(platformKey, btn) {
+        const input = document.getElementById('canary-input-' + platformKey);
+        if (!input) return;
+        btn.disabled = true;
+        try {
+            const body = new FormData();
+            body.append('platform', platformKey);
+            body.append('url', input.value.trim());
+            body.append('csrf_token', CSRF);
+            const resp = await fetch('{{ url_for("admin.cookies_canary") }}', { method: 'POST', body });
+            const payload = await resp.json();
+            if (payload.succ) {
+                toggleCanary(platformKey);
+            } else {
+                const hint = document.getElementById('canary-hint-' + platformKey);
+                if (hint) {
+                    hint.textContent = payload.message || '保存失败，请稍后重试';
+                    hint.classList.remove('hidden');
+                }
+            }
+        } finally {
+            btn.disabled = false;
+        }
+    }
+</script>
+{% endblock %}

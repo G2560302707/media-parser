@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="32x32">
     <title>{% block title %}控制台{% endblock %} · Media Parser</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{{ url_for('static', filename='vendor/tailwind.js') }}"></script>
     <script>
       tailwind.config = {
         darkMode: 'class',
@@ -77,7 +77,10 @@
             <a href="{{ url_for('admin.platforms') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ 'bg-indigo-50/80 text-brand font-semibold shadow-2xs' if active_nav == 'platforms' else 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                 <span class="w-5 h-5 flex items-center justify-center shrink-0">{{ icon('globe', 'w-4 h-4') }}</span><span>支持平台</span>
             </a>
-            
+            <a href="{{ url_for('admin.cookies') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ 'bg-indigo-50/80 text-brand font-semibold shadow-2xs' if active_nav == 'cookies' else 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                <span class="w-5 h-5 flex items-center justify-center shrink-0">{{ icon('shield', 'w-4 h-4') }}</span><span>凭据巡检</span>
+            </a>
+
             <div class="nav-group-title text-xs font-bold text-slate-400 px-3 pt-4 pb-1 uppercase tracking-wider">运维监控</div>
             <a href="{{ url_for('admin.logs') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ 'bg-indigo-50/80 text-brand font-semibold shadow-2xs' if active_nav == 'logs' else 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                 <span class="w-5 h-5 flex items-center justify-center shrink-0">{{ icon('scroll', 'w-4 h-4') }}</span><span>运行日志</span>
@@ -697,5 +700,6 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script src="{{ url_for('static', filename='js/table_manager.js') }}"></script>
+{% block scripts %}{% endblock %}
 </body>
 </html>
