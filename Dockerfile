@@ -9,8 +9,12 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# 安装 gosu 用于 Docker 启动入口处的挂载卷权限修复与安全降权
-RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
+# 安装 gosu 用于 Docker 启动入口处的挂载卷权限修复与安全降权（配置国内源加速构建）
+RUN (sed -i 's/deb.debian.org/mirrors.aliyun.com/g; s/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true) && \
+    (sed -i 's/deb.debian.org/mirrors.aliyun.com/g; s/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list 2>/dev/null || true) && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends gosu && \
+    rm -rf /var/lib/apt/lists/*
 
 # 复制依赖说明文件并安装 Python 包
 COPY requirements.txt /app/

@@ -15,6 +15,7 @@ from http.cookies import SimpleCookie
 
 from configs.logging_config import get_logger
 from src.db import get_db, setting, utcnow
+from src.utils.cookie_samples import default_probe_sample
 
 logger = get_logger(__name__)
 
@@ -158,13 +159,30 @@ COOKIE_REGISTRY = {
         "passive_error_codes": [],
         "config_hint": "可选增强凭据；配置后附带 appid 与 device-platform 请求头，提升接口成功率。",
     },
+    "zhihu": {
+        "platform_name": "知乎",
+        "db_keys": ["cookie_zhihu"],
+        "env_keys": ["ZHIHU_COOKIE"],
+        "required_fields": [],
+        "optional_fields": ["d_c0", "z_c0"],
+        "severity": "fallback",
+        "capabilities": [
+            {"name": "视频/回答/专栏", "needs_cookie": False},
+            {"name": "风控兜底", "needs_cookie": True},
+        ],
+        "canary_setting": "canary_zhihu",
+        "log_names": ["知乎"],
+        "passive_error_codes": [],
+        "config_hint": "推荐精简字段 d_c0=xxx; z_c0=xxx; 常规解析免配，用于绕过反爬风控或提取登录可见内容。",
+    },
 }
 
 SEVERITY_ORDER = {"critical": 0, "enhanced": 1, "fallback": 2}
-STATUS_ORDER = {"stale": 0, "not_configured": 1, "incomplete": 2, "probe_failed": 3, "healthy": 4}
+STATUS_ORDER = {"stale": 0, "not_configured": 1, "incomplete": 2, "probe_failed": 3, "unverified": 4, "healthy": 5}
 
 STATUS_LABELS = {
     "healthy": "有效",
+    "unverified": "待验证",
     "stale": "疑似失效",
     "incomplete": "字段缺失",
     "not_configured": "未配置",
@@ -367,10 +385,14 @@ def _derive_status(platform_key):
         return "stale"
 
     latest = latest_probe(platform_key)
-    if latest and latest["status"] in ("stale", "probe_failed", "healthy"):
-        # 字段校验与被动信号都没有新问题时，采信最近一次真实探针结论。
+    if latest and latest["status"] in ("stale", "probe_failed", "healthy", "unverified"):
+        # 历史字段校验及 BOTH_OK 曾记作 healthy，不能作为有效凭据的证据。
+        if latest["status"] == "healthy":
+            detail = latest.get("detail")
+            if latest.get("trigger_type") != "probe" or not isinstance(detail, dict) or detail.get("signal") != "COOKIE_GAIN":
+                return "unverified"
         return latest["status"]
-    return "healthy"
+    return "unverified"
 
 
 def build_overview():
@@ -384,10 +406,11 @@ def build_overview():
             {
                 "name": cap["name"],
                 "needs_cookie": cap["needs_cookie"],
-                "active": (not cap["needs_cookie"]) or status == "healthy",
+                "active": (not cap["needs_cookie"]) or status in ("healthy", "unverified"),
             }
             for cap in entry["capabilities"]
         ]
+        default_sample = default_probe_sample(key)
         entries.append({
             "platform_key": key,
             "platform_name": entry["platform_name"],
@@ -402,13 +425,15 @@ def build_overview():
             "last_probe": latest_probe(key),
             "passive_24h": passive_signal(key),
             "canary_url": setting(entry["canary_setting"]),
+            "default_canary_url": default_sample["url"] if default_sample else None,
+            "probe_capability": default_sample["cookie_probe"]["capability"] if default_sample else None,
             "config_hint": entry["config_hint"],
             "env_keys": entry["env_keys"],
         })
 
     entries.sort(key=lambda x: (SEVERITY_ORDER[x["severity"]], STATUS_ORDER[x["status"]]))
 
-    summary = {"healthy": 0, "stale": 0, "not_configured": 0, "incomplete": 0, "probe_failed": 0}
+    summary = {"healthy": 0, "stale": 0, "not_configured": 0, "incomplete": 0, "probe_failed": 0, "unverified": 0}
     for item in entries:
         summary[item["status"]] = summary.get(item["status"], 0) + 1
 
@@ -424,8 +449,10 @@ def build_finding(overview):
             return f"{item['platform_name']}凭据疑似失效，相关能力已降级"
         if item["status"] == "incomplete":
             return f"{item['platform_name']}凭据缺少字段：{'、'.join(item['field_check']['missing'])}"
+        if item["status"] == "unverified":
+            return f"{item['platform_name']}凭据有效性待验证，请使用依赖 Cookie 的样例进行探针验证"
         if item["status"] == "probe_failed":
-            return f"{item['platform_name']}探针失败，请检查金丝雀链接"
+            return f"{item['platform_name']}探针失败，请检查测试样例链接"
         if item["status"] == "not_configured":
             return f"{item['platform_name']}未配置凭据，{item['severity_label']}型能力未启用"
     return None

@@ -23,7 +23,7 @@ class CookieRegistryTest(unittest.TestCase):
         settings_keys = {
             "cookie_doubao", "cookie_douyin", "cookie_jimeng", "cookie_kuaishou",
             "cookie_pinduoduo", "cookie_wechat_channels", "cookie_weibo",
-            "cookie_xiaohongshu", "cookie_yuanbao",
+            "cookie_xiaohongshu", "cookie_yuanbao", "cookie_zhihu",
         }
         covered = {key for entry in COOKIE_REGISTRY.values() for key in entry["db_keys"]}
         self.assertEqual(settings_keys, covered)
