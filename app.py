@@ -6,6 +6,7 @@ try:
 except ImportError:  # Windows 无 POSIX 文件锁
     fcntl = None
 from flask import Flask
+from flask_cors import CORS
 from src.api.parse import bp as api_bp
 from src.web.views import bp as web_bp
 from src.auth import bp as auth_bp, register_template_helpers
@@ -77,6 +78,13 @@ def create_app(config=None):
         manager.start()
         from src.utils.cookie_registry import start_auto_inspector
         start_auto_inspector()
+
+    # 跨域配置（仅对 /api/* 接口开放，默认允许所有来源，支持通过环境变量 CORS_ORIGINS 自定义）
+    cors_origins_raw = (os.getenv('CORS_ORIGINS') or '*').strip()
+    cors_origins = '*' if cors_origins_raw == '*' else [
+        origin.strip() for origin in cors_origins_raw.split(',') if origin.strip()
+    ]
+    CORS(app, resources={r"/api/*": {"origins": cors_origins}})
 
     # 注册蓝图
     app.register_blueprint(api_bp, url_prefix='/api')

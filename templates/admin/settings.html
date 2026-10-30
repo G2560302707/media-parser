@@ -225,7 +225,8 @@
                     </div>
 
                     <div class="text-xs text-slate-500 leading-relaxed">
-                        此配置<strong>优先级高于 <code>.env</code> 环境变量</strong>，保存即生效。您可以粘贴浏览器的完整 Cookie，也可仅填写推荐的精简字段。若需恢复使用 <code>.env</code> 凭据，直接<strong>清空内容并保存</strong>即可。
+                        此配置<strong>优先级高于 <code>.env</code> 环境变量</strong>，保存即生效。您可以粘贴浏览器的完整 Cookie，也可仅填写推荐的精简字段。若需恢复使用
+                        <code>.env</code> 凭据，直接<strong>清空内容并保存</strong>即可。
                     </div>
 
                     <div class="space-y-5 text-xs">
@@ -244,36 +245,18 @@
                             <p class="text-[11px] text-slate-400">腾讯元宝登录凭据。用于微信视频号无水印视频/图集及元宝 AI 内容的解析提取。</p>
                         </div>
 
-                        <!-- 小红书 -->
+                        <!-- 豆包 AI -->
                         <div class="space-y-1.5">
                             <div class="flex items-center justify-between">
-                                <label for="cookie_xiaohongshu"
-                                    class="font-semibold text-slate-900 flex items-center gap-2">
-                                    <span>小红书 (Xiaohongshu)</span>
+                                <label for="cookie_doubao" class="font-semibold text-slate-900 flex items-center gap-2">
+                                    <span>豆包 AI (Doubao)</span>
                                 </label>
-                                <span class="text-[11px] text-slate-400">留空读取: <code>XHS_COOKIE</code></span>
+                                <span class="text-[11px] text-slate-400">留空读取: <code>DOUBAO_COOKIE</code></span>
                             </div>
-                            <textarea id="cookie_xiaohongshu" name="cookie_xiaohongshu" rows="2"
-                                placeholder="推荐精简字段: a1=xxx; webId=xxx; web_session=xxx;"
-                                onchange="triggerSettingsSubmit(this)"
-                                class="w-full px-3.5 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50 custom-scroll">{{ settings.get('cookie_xiaohongshu', '') }}</textarea>
-                            <p class="text-[11px] text-slate-400">用于绕过小红书风控阻断与提取高清无水印图集/视频。</p>
-                        </div>
-
-                        <!-- 快手 -->
-                        <div class="space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <label for="cookie_kuaishou"
-                                    class="font-semibold text-slate-900 flex items-center gap-2">
-                                    <span>快手 (Kuaishou)</span>
-                                </label>
-                                <span class="text-[11px] text-slate-400">留空读取: <code>KUAISHOU_COOKIE</code></span>
-                            </div>
-                            <textarea id="cookie_kuaishou" name="cookie_kuaishou" rows="2"
-                                placeholder="推荐精简字段: kpf=PC_WEB; kpn=KUAISHOU_VISION; did=xxx;"
-                                onchange="triggerSettingsSubmit(this)"
-                                class="w-full px-3.5 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50 custom-scroll">{{ settings.get('cookie_kuaishou', '') }}</textarea>
-                            <p class="text-[11px] text-slate-400">用于解除快手风控阻断或滑块验证要求。</p>
+                            <textarea id="cookie_doubao" name="cookie_doubao" rows="2"
+                                placeholder="推荐精简字段: sessionid_ss=xxx;" onchange="triggerSettingsSubmit(this)"
+                                class="w-full px-3.5 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50 custom-scroll">{{ settings.get('cookie_doubao', '') }}</textarea>
+                            <p class="text-[11px] text-slate-400">用于提取豆包 AI 对话中的视频/生成媒体。</p>
                         </div>
 
                         <!-- 拼多多 -->
@@ -289,6 +272,52 @@
                                 placeholder="推荐精简字段: PDDAccessToken=xxx;" onchange="triggerSettingsSubmit(this)"
                                 class="w-full px-3.5 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50 custom-scroll">{{ settings.get('cookie_pinduoduo', '') }}</textarea>
                             <p class="text-[11px] text-slate-400">用于拼多多商品/视频页面详情提取。</p>
+                        </div>
+
+                        <!-- 即梦 AI -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label for="cookie_jimeng" class="font-semibold text-slate-900 flex items-center gap-2">
+                                    <span>即梦 AI (Jimeng)</span>
+                                </label>
+                                <span class="text-[11px] text-slate-400">留空读取: <code>JIMENG_COOKIE</code></span>
+                            </div>
+                            <textarea id="cookie_jimeng" name="cookie_jimeng" rows="2"
+                                placeholder="推荐精简字段: sessionid=xxx;" onchange="triggerSettingsSubmit(this)"
+                                class="w-full px-3.5 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50 custom-scroll">{{ settings.get('cookie_jimeng', '') }}</textarea>
+                            <p class="text-[11px] text-slate-400">用于即梦 AI 生成内容的接口凭据支持。</p>
+                        </div>
+
+                        <!-- 小红书 -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label for="cookie_xiaohongshu"
+                                    class="font-semibold text-slate-900 flex items-center gap-2">
+                                    <span>小红书 (Xiaohongshu)</span>
+                                </label>
+                                <span class="text-[11px] text-slate-400">留空读取: <code>XHS_COOKIE</code></span>
+                            </div>
+                            <textarea id="cookie_xiaohongshu" name="cookie_xiaohongshu" rows="2"
+                                placeholder="推荐精简字段: a1=xxx; webId=xxx; web_session=xxx;"
+                                onchange="triggerSettingsSubmit(this)"
+                                class="w-full px-3.5 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50 custom-scroll">{{ settings.get('cookie_xiaohongshu', '') }}</textarea>
+                            <p class="text-[11px] text-slate-400">可选。用于绕过小红书风控阻断与提取高清无水印图集/视频。</p>
+                        </div>
+
+                        <!-- 快手 -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label for="cookie_kuaishou"
+                                    class="font-semibold text-slate-900 flex items-center gap-2">
+                                    <span>快手 (Kuaishou)</span>
+                                </label>
+                                <span class="text-[11px] text-slate-400">留空读取: <code>KUAISHOU_COOKIE</code></span>
+                            </div>
+                            <textarea id="cookie_kuaishou" name="cookie_kuaishou" rows="2"
+                                placeholder="推荐精简字段: kpf=PC_WEB; kpn=KUAISHOU_VISION; did=xxx;"
+                                onchange="triggerSettingsSubmit(this)"
+                                class="w-full px-3.5 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50 custom-scroll">{{ settings.get('cookie_kuaishou', '') }}</textarea>
+                            <p class="text-[11px] text-slate-400">可选。用于解除快手风控阻断或滑块验证要求。</p>
                         </div>
 
                         <!-- 抖音 -->
@@ -320,32 +349,18 @@
                             <p class="text-[11px] text-slate-400">可选。常规内容免 Cookie，遇到频繁抓包限制时提供。</p>
                         </div>
 
-                        <!-- 豆包 AI -->
+                        <!-- 知乎 -->
                         <div class="space-y-1.5">
                             <div class="flex items-center justify-between">
-                                <label for="cookie_doubao" class="font-semibold text-slate-900 flex items-center gap-2">
-                                    <span>豆包 AI (Doubao)</span>
+                                <label for="cookie_zhihu" class="font-semibold text-slate-900 flex items-center gap-2">
+                                    <span>知乎 (Zhihu)</span>
                                 </label>
-                                <span class="text-[11px] text-slate-400">留空读取: <code>DOUBAO_COOKIE</code></span>
+                                <span class="text-[11px] text-slate-400">留空读取: <code>ZHIHU_COOKIE</code></span>
                             </div>
-                            <textarea id="cookie_doubao" name="cookie_doubao" rows="2"
-                                placeholder="推荐精简字段: sessionid_ss=xxx;" onchange="triggerSettingsSubmit(this)"
-                                class="w-full px-3.5 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50 custom-scroll">{{ settings.get('cookie_doubao', '') }}</textarea>
-                            <p class="text-[11px] text-slate-400">用于提取豆包 AI 对话中的视频/生成媒体。</p>
-                        </div>
-
-                        <!-- 即梦 AI -->
-                        <div class="space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <label for="cookie_jimeng" class="font-semibold text-slate-900 flex items-center gap-2">
-                                    <span>即梦 AI (Jimeng)</span>
-                                </label>
-                                <span class="text-[11px] text-slate-400">留空读取: <code>JIMENG_COOKIE</code></span>
-                            </div>
-                            <textarea id="cookie_jimeng" name="cookie_jimeng" rows="2"
-                                placeholder="推荐精简字段: sessionid=xxx;" onchange="triggerSettingsSubmit(this)"
-                                class="w-full px-3.5 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50 custom-scroll">{{ settings.get('cookie_jimeng', '') }}</textarea>
-                            <p class="text-[11px] text-slate-400">用于即梦 AI 生成内容的接口凭据支持。</p>
+                            <textarea id="cookie_zhihu" name="cookie_zhihu" rows="2"
+                                placeholder="推荐精简字段: d_c0=xxx; z_c0=xxx;" onchange="triggerSettingsSubmit(this)"
+                                class="w-full px-3.5 py-2 font-mono text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition bg-slate-50/50 custom-scroll">{{ settings.get('cookie_zhihu', '') }}</textarea>
+                            <p class="text-[11px] text-slate-400">可选。用于绕过知乎专栏/问答风控限制或提取登录可见内容。</p>
                         </div>
                     </div>
                 </section>
