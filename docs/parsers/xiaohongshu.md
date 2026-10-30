@@ -88,6 +88,7 @@ if match:
   * 去除样式后缀（如 `!h5_1080jpg`）及带水印的拼接参数，提升跨平台兼容性。
 * **实况照片 (LivePhoto)**：
   * 检查 `image.get('livePhoto') == True`，若为真，则提取 `image.stream.h264[0].masterUrl` 作为关联动态视频流，并通过 `_ensure_https` 补全协议。
+  * API 在 `url` 与 `live_photo_url` 都在时补 `live_asset_url`，供 iOS 存成系统实况照片。
 
 ### 3.3 封面与作者提取
 * **封面**：提取 `note_data.cover` 或 `imageList[0]`，并通过 `_clean_image_url` 转换为高清无水印 JPG 直链。

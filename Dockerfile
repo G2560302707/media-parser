@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # 安装 gosu 用于 Docker 启动入口处的挂载卷权限修复与安全降权
-RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends gosu ffmpeg && rm -rf /var/lib/apt/lists/*
 
 # 复制依赖说明文件并安装 Python 包
 COPY requirements.txt /app/

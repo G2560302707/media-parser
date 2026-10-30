@@ -176,6 +176,9 @@ class ApiContractTest(unittest.TestCase):
         self.assertEqual(data["cover_url"], "https://cdn.example/cover.jpg")
         self.assertEqual(data["image_list"][0], "https://cdn.example/image.jpg")
         self.assertEqual(data["image_list"][1]["live_photo_url"], "https://cdn.example/live.mp4")
+        self.assertIn("/api/v1/live-photo/", data["image_list"][1]["live_asset_url"])
+        self.assertTrue(data["image_list"][1]["live_asset_url"].endswith("/LIVEMP.jpg"))
+        self.assertIn("/api/v1/live-photo/", data["image_list"][1]["live_asset_path"])
 
     def test_response_exposes_optional_description(self):
         response = self.post_with_parser(self.parser(desc="这是作品正文"))

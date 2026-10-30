@@ -261,7 +261,8 @@
                 <button id="lightboxCopyBtn" onclick="copyLightboxUrl()" class="rounded-xl bg-white/20 hover:bg-white/30 text-white px-4 py-2 text-xs font-semibold backdrop-blur-md transition inline-flex items-center gap-1.5">{{ icon('clipboard', 'w-3.5 h-3.5') }}复制图片链接</button>
                 <a id="lightboxOpenLink" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" class="rounded-xl bg-white/20 hover:bg-white/30 text-white px-4 py-2 text-xs font-semibold backdrop-blur-md transition inline-flex items-center gap-1.5">打开图片 ↗</a>
                 <button id="lightboxCopyLiveBtn" onclick="copyLightboxLiveUrl()" class="hidden rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white px-4 py-2 text-xs font-semibold backdrop-blur-md transition inline-flex items-center gap-1.5">{{ icon('clipboard', 'w-3.5 h-3.5') }}复制实况视频</button>
-                <a id="lightboxOpenLiveLink" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" class="hidden rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-xs font-semibold shadow-md transition">打开实况 ↗</a>
+                <a id="lightboxOpenLiveLink" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" class="hidden rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-xs font-semibold shadow-md transition">打开实况视频 ↗</a>
+                <a id="lightboxDownloadLiveAsset" target="_blank" rel="noopener noreferrer" class="hidden rounded-xl bg-white text-indigo-700 px-4 py-2 text-xs font-semibold shadow-md transition">下载实况照片</a>
             </div>
         </div>
 
@@ -658,7 +659,8 @@
                 if(!item || typeof item !== 'object') return [];
                 const entries = [];
                 if(item.url) entries.push(`- 图片 ${index + 1}：${formatCopyLink(item.url)}`);
-                if(item.live_photo_url) entries.push(`- Live Photo ${index + 1}：${formatCopyLink(item.live_photo_url)}`);
+                if(item.live_photo_url) entries.push(`- Live Photo 动轨 ${index + 1}：${formatCopyLink(item.live_photo_url)}`);
+                if(item.live_asset_url) entries.push(`- 实况照片 ${index + 1}：${formatCopyLink(item.live_asset_url)}`);
                 return entries;
             });
             if(formattedImages.length){
@@ -776,7 +778,7 @@
 
         let activeLightboxLivePhotoUrl = '';
 
-        function openLightbox(url, livePhotoUrl = ''){
+        function openLightbox(url, livePhotoUrl = '', liveAssetUrl = ''){
             activeLightboxUrl = url;
             activeLightboxLivePhotoUrl = livePhotoUrl;
             const modal = document.getElementById('lightboxModal');
@@ -784,6 +786,7 @@
             const openLink = document.getElementById('lightboxOpenLink');
             const copyLiveBtn = document.getElementById('lightboxCopyLiveBtn');
             const openLiveLink = document.getElementById('lightboxOpenLiveLink');
+            const downloadLiveAsset = document.getElementById('lightboxDownloadLiveAsset');
             img.src = url;
             openLink.href = url;
 
@@ -794,6 +797,12 @@
             } else {
                 copyLiveBtn.classList.add('hidden');
                 openLiveLink.classList.add('hidden');
+            }
+            if(liveAssetUrl){
+                downloadLiveAsset.href = liveAssetUrl;
+                downloadLiveAsset.classList.remove('hidden');
+            } else {
+                downloadLiveAsset.classList.add('hidden');
             }
             modal.classList.remove('hidden');
         }
@@ -978,11 +987,13 @@
             (data.image_list || []).forEach((item, idx) => {
                 let url = '';
                 let livePhoto = '';
+                let liveAsset = '';
                 if(typeof item === 'string'){
                     url = item.trim();
                 } else if(item && typeof item === 'object'){
                     url = (item.url || '').trim();
                     livePhoto = (item.live_photo_url || '').trim();
+                    liveAsset = (item.live_asset_url || '').trim();
                 }
                 if(url && !seenUrls.has(url)){
                     seenUrls.add(url);
@@ -990,7 +1001,8 @@
                     uniqueImageList.push({
                         label: isLive ? `Live Photo ${idx + 1}` : `图片 ${idx + 1}`,
                         url: url,
-                        livePhoto: livePhoto
+                        livePhoto: livePhoto,
+                        liveAsset: liveAsset
                     });
                 }
             });
@@ -998,7 +1010,7 @@
             const coverUrl = typeof data.cover_url === 'string' ? data.cover_url.trim() : '';
             if(coverUrl && !seenUrls.has(coverUrl)){
                 seenUrls.add(coverUrl);
-                uniqueImageList.unshift({ label: '封面', url: coverUrl, livePhoto: '' });
+                uniqueImageList.unshift({ label: '封面', url: coverUrl, livePhoto: '', liveAsset: '' });
             }
             if(uniqueImageList.length > 0){
                 imageCount.textContent = uniqueImageList.length;
@@ -1011,7 +1023,7 @@
                     img.referrerPolicy = 'no-referrer';
                     img.loading = 'lazy';
                     img.className = 'w-full h-full object-cover transition duration-300 group-hover:scale-105';
-                    img.onclick = () => openLightbox(item.url, item.livePhoto);
+                    img.onclick = () => openLightbox(item.url, item.livePhoto, item.liveAsset);
                     card.appendChild(img);
 
                     let cardVideo = null;
@@ -1044,7 +1056,7 @@
                     const btnZoom = document.createElement('button');
                     btnZoom.className = 'rounded-xl bg-white/95 px-3 py-1.5 text-xs font-bold text-slate-800 shadow-md hover:bg-white transition flex items-center gap-1.5';
                     btnZoom.innerHTML = `${iconMarkup('search', 'w-3.5 h-3.5')}放大`;
-                    btnZoom.onclick = (e) => { e.stopPropagation(); openLightbox(item.url, item.livePhoto); };
+                    btnZoom.onclick = (e) => { e.stopPropagation(); openLightbox(item.url, item.livePhoto, item.liveAsset); };
 
                     overlay.appendChild(btnZoom);
 

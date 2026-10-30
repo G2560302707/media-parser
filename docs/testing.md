@@ -9,6 +9,7 @@
 ```text
 tests/
 ├── test_api_contract.py            # API 统一契约与错误码断言测试
+├── test_live_photo.py              # 实况照片 Motion Photo 合成与下载接口
 ├── test_api_video_compat.py        # 兼容性测试
 ├── test_parser_factory.py          # 解析器自动注册与工厂路由测试
 ├── test_web_fetcher.py             # 302跳转与URL正则提取测试

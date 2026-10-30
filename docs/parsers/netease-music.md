@@ -43,7 +43,7 @@
 | `video_list` | 多档视频地址 |
 | `audio_url` | 可公开播放的完整歌曲音频 |
 | `subtitles` | LRC 转换后的时间轴歌词 |
-| `image_list` | 动态原图及可选 `live_photo_url` |
+| `image_list` | 动态原图及可选 `live_photo_url`；API 在成对实况上会再补 `live_asset_url` |
 
 ## 限制
 

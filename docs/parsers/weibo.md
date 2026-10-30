@@ -51,6 +51,7 @@
 当博文包含 Live Photo 时，接口返回的 `pics[]` 中会包含 `type: "livephoto"` 及 `videoSrc`（或根节点 `live_photo` 列表）：
 * 解析器将 `image_list` 格式化为 `[{"url": "https://wx.../osj1080/...", "live_photo_url": "https://video.weibo.com/media/play?livephoto=..."}]` 对象列表；
 * `live_photo_url` 请求时会自动重定向生成带签名参数的 `.mov` 实况动态视频文件。
+* API 在静图和动轨都在时补 `live_asset_url`，把这对文件合成可导入系统实况的 JPEG。
 
 ---
 

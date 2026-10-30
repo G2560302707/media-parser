@@ -67,6 +67,14 @@ CREATE TABLE IF NOT EXISTS rate_limit_buckets (
     count INTEGER NOT NULL,
     PRIMARY KEY(subject, bucket_second)
 );
+CREATE TABLE IF NOT EXISTS live_photo_assets (
+    token TEXT PRIMARY KEY,
+    still_url TEXT NOT NULL,
+    video_url TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_live_photo_expires ON live_photo_assets(expires_at);
 CREATE INDEX IF NOT EXISTS idx_logs_created_at ON request_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_logs_user_id ON request_logs(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_rate_limit_bucket_time ON rate_limit_buckets(bucket_second);

@@ -1,6 +1,6 @@
 import time
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, Response, current_app, jsonify, request
 from configs.logging_config import get_logger
 from utils.web_fetcher import WebFetcher, UrlParser
 from src.parser_factory import ParserFactory
@@ -12,9 +12,18 @@ from src.db import refund_user_credit, reserve_user_credit
 from src.api.access import (
     authenticate_api_key,
     authenticate_web_parse,
+    consume_rate_limit,
+    get_client_ip,
     global_api_enabled,
     platform_access,
     record_request,
+)
+from src.utils.live_photo import (
+    LivePhotoError,
+    live_asset_api_path,
+    live_asset_public_url,
+    normalize_live_token,
+    register_live_asset,
 )
 
 bp = Blueprint('parse', __name__)
@@ -26,6 +35,34 @@ logger = get_logger(__name__)
 def health():
     """供容器编排、反向代理和监控系统检查服务状态。"""
     return jsonify({'status': 'ok'}), 200
+
+
+@bp.route('/v1/live-photo/<token>', methods=['GET'])
+@bp.route('/v1/live-photo/<token>/LIVEMP.jpg', methods=['GET'])
+def live_photo(token):
+    """按解析时记下的静图+动轨，现场合成可导入系统实况的 JPEG。"""
+    token = normalize_live_token(token)
+    if not global_api_enabled():
+        return make_response(503, 'API 服务已暂停', None, False, 'API_DISABLED'), 503
+    if not consume_rate_limit(f"live-photo:{get_client_ip()}", 12, 10):
+        return make_response(429, '请求过于频繁，请稍后再试', None, False, 'RATE_LIMITED'), 429
+    from src.utils.live_photo import build_live_asset
+    try:
+        jpeg = build_live_asset(token)
+    except LivePhotoError as exc:
+        status = 404 if exc.code == 'LIVE_PHOTO_EXPIRED' else 422
+        return make_response(status, exc.message, None, False, exc.code), status
+    except Exception:
+        logger.exception('Live photo build failed')
+        return make_response(422, '无法合成实况照片', None, False, 'LIVE_PHOTO_BUILD_FAILED'), 422
+    return Response(
+        jpeg,
+        mimetype='image/jpeg',
+        headers={
+            'Content-Disposition': 'attachment; filename="LIVEMP.jpg"',
+            'Cache-Control': 'private, max-age=300',
+        },
+    )
 
 
 @bp.route('/parse', methods=['GET', 'POST'])
@@ -183,10 +220,18 @@ def _execute_parse(text, access):
         if content_data.get('image_list'):
             for img in content_data['image_list']:
                 if isinstance(img, dict):
-                    processed_image_list.append({
+                    item = {
                         'url': UrlParser.convert_to_https(img.get('url')),
                         'live_photo_url': UrlParser.convert_to_https(img.get('live_photo_url'))
-                    })
+                    }
+                    if item['url'] and item['live_photo_url']:
+                        try:
+                            token = register_live_asset(item['url'], item['live_photo_url'])
+                            item['live_asset_path'] = live_asset_api_path(token)
+                            item['live_asset_url'] = live_asset_public_url(token)
+                        except Exception:
+                            logger.exception('Failed to register live photo asset')
+                    processed_image_list.append(item)
                 else:
                     processed_image_list.append(UrlParser.convert_to_https(img))
 

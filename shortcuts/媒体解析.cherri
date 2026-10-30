@@ -1,6 +1,7 @@
 #include 'actions/web'
 #include 'actions/photos'
 #include 'actions/documents'
+#include 'actions/images'
 #include 'actions/text'
 #include 'actions/sharing'
 #include 'actions/calendar'
@@ -13,8 +14,11 @@
 #define noinput getclipboard
 #define mac false
 
-comment('媒体解析 1.5
+comment('媒体解析 1.10
 从分享口令直接进相册，不用在网页上停一下。
+实况优先存 live_photo_url 动轨（相册里是视频，能直接播放）。
+iOS「存储到相簿」会把合成 LIVE*MP.jpg 压成静图，所以默认不再把合成图存相册。
+合成失败或无动轨时再试 live_asset_path / 静图。
 每次运行都会往「媒体解析/诊断日志.txt」记一笔，出事能翻。')
 
 @base = "https://after7lab.cloud:81"
@@ -38,7 +42,7 @@ if @logExists == "否" {
     saveFile("媒体解析/诊断日志.txt", @header, true)
 }
 
-@log = "[{@stamp}] ===== 开始运行（媒体解析 1.5） =====\n"
+@log = "[{@stamp}] ===== 开始运行（媒体解析 1.6） =====\n"
 appendToFile("媒体解析/诊断日志.txt", @log)
 
 /* ── 密钥：记在快捷指令文件夹里，更新指令也不会冲掉 ── */
@@ -414,35 +418,83 @@ if @imageCount > 0 {
             appendToFile("媒体解析/诊断日志.txt", @log)
         } else {
             @itemDict = getDictionary(@item)
+            @pathRaw = getValue(@itemDict, "live_asset_path")
+            @path = "{@pathRaw}"
+            if @path beginsWith "/" {
+                @asset = "{@base}{@path}"
+            } else {
+                @assetRaw = getValue(@itemDict, "live_asset_url")
+                @asset = "{@assetRaw}"
+            }
             @liveRaw = getValue(@itemDict, "live_photo_url")
             @live = "{@liveRaw}"
             @stillRaw = getValue(@itemDict, "url")
             @still = "{@stillRaw}"
-            @mediaURL = ""
-            if @still beginsWith "http" {
-                @mediaURL = "{@still}"
-            }
+            @seq += 1
+            @gotPhoto = "否"
+            @gotLive = "否"
+            @ok = "否"
+            /* 快捷指令无法写入系统「配对实况」。存动轨 MP4 是相册里能播放的可靠方式；合成图经 savePhoto 常被压成静图/黑图。 */
             if @live beginsWith "http" {
-                @mediaURL = "{@live}"
-            }
-            if @mediaURL beginsWith "http" {
-                @log = "[{@stamp}] 实况/图下载：{@mediaURL}\n"
+                @log = "[{@stamp}] 实况动轨下载：{@live}\n"
                 appendToFile("媒体解析/诊断日志.txt", @log)
-                @mediaFile = downloadURL(@mediaURL)
-                @ok = "否"
-                if @mediaFile {
-                    savePhoto(@mediaFile)
+                @liveFile = downloadURL(@live)
+                if @liveFile {
+                    savePhoto(@liveFile)
                     @saved += 1
+                    @gotLive = "是"
                     @ok = "是"
                 } else {
-                    @failed += 1
+                    @log = "[{@stamp}] 实况动轨下载失败\n"
+                    appendToFile("媒体解析/诊断日志.txt", @log)
                 }
-                @log = "[{@stamp}] 实况/图结果：下载并保存={@ok}\n"
-                appendToFile("媒体解析/诊断日志.txt", @log)
-            } else {
-                @log = "[{@stamp}] 图片项没有 http 地址，跳过 live={@live} still={@still}\n"
-                appendToFile("媒体解析/诊断日志.txt", @log)
             }
+            if @gotLive == "否" {
+                if @asset beginsWith "http" {
+                    @log = "[{@stamp}] 实况合成下载（回退）：{@asset}\n"
+                    appendToFile("媒体解析/诊断日志.txt", @log)
+                    @mediaFile = downloadURL(@asset)
+                    if @mediaFile {
+                        saveFile("媒体解析/LIVE{@seq}MP.jpg", @mediaFile, true)
+                        @disk = getFile("媒体解析/LIVE{@seq}MP.jpg", nil, false)
+                        @pics = getImages(@disk)
+                        @picCount = count(@pics)
+                        if @picCount > 0 {
+                            savePhoto(@disk)
+                            @saved += 1
+                            @gotPhoto = "是"
+                            @ok = "是"
+                        } else {
+                            @log = "[{@stamp}] 实况合成没被认成图片，改存静图\n"
+                            appendToFile("媒体解析/诊断日志.txt", @log)
+                        }
+                    }
+                }
+            }
+            if @ok == "否" {
+                if @still beginsWith "http" {
+                    @log = "[{@stamp}] 实况静图下载（最后回退）：{@still}\n"
+                    appendToFile("媒体解析/诊断日志.txt", @log)
+                    @stillFile = downloadURL(@still)
+                    if @stillFile {
+                        saveFile("媒体解析/静图{@seq}.jpg", @stillFile, true)
+                        @stillDisk = getFile("媒体解析/静图{@seq}.jpg", nil, false)
+                        @stillPics = getImages(@stillDisk)
+                        @stillN = count(@stillPics)
+                        if @stillN > 0 {
+                            savePhoto(@stillPics)
+                            @saved += 1
+                            @gotPhoto = "是"
+                            @ok = "是"
+                        }
+                    }
+                }
+            }
+            if @ok == "否" {
+                @failed += 1
+            }
+            @log = "[{@stamp}] 实况结果：保存={@ok} 动轨视频={@gotLive} 照片={@gotPhoto}\n"
+            appendToFile("媒体解析/诊断日志.txt", @log)
         }
     }
 }

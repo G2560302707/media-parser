@@ -208,7 +208,7 @@ abogus = signer.get_abogus(play_url, signer.user_agent)
 * **实况动轨（Live Photo）提取与端点构造**：
   * 对图集内每个元素，递归扫描 `video`、`video_play_addr`、`video_download_addr`；
   * 若仅返回 `uri`，自动构造 1080p 无水印播放端点（`iesdouyin.com/aweme/v1/play/?video_id={uri}&ratio=1080p`），支持 `play_addr_h264`、`play_addr_lowbr`、`download_addr` 等备用字段；
-  * 输出格式保持向下兼容：普通图片为 `str`，实况图为 `{'url': ..., 'live_photo_url': ...}`。
+  * 输出格式保持向下兼容：普通图片为 `str`，实况图为 `{'url': ..., 'live_photo_url': ...}`。API 层在两者都在时会再补 `live_asset_url`（合成后的系统实况 JPEG）。
 
 ### 4.8 画质多维度仲裁与原画（download_addr）支持
 * **原画源文件端点支持**：

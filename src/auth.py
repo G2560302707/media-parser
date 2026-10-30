@@ -362,20 +362,48 @@ def format_local_date(value):
         return str(value)[:10]
 
 
+def _merge_forwarded_host_port(host, proto):
+    """反代常把 X-Forwarded-Host 写成无端口的主机名，从 Host 补上非默认端口。"""
+    host = (host or "").strip()
+    if not host or ":" in host:
+        return host
+    req_host = (request.host or "").split(",")[0].strip()
+    if ":" not in req_host:
+        return host
+    _, _, port = req_host.rpartition(":")
+    if not port.isdigit():
+        return host
+    default_port = "443" if (proto or "").split(",")[0].strip() == "https" else "80"
+    if port == default_port:
+        return host
+    return f"{host}:{port}"
+
+
+def public_request_origin():
+    """对外可访问的站点根地址（无末尾斜杠），用于 JSON 里的绝对链接。"""
+    import os
+
+    env_base = (os.getenv("API_BASE_URL") or os.getenv("BASE_URL") or "").strip()
+    if env_base:
+        return env_base.rstrip("/")
+    try:
+        proto = (request.headers.get("X-Forwarded-Proto") or request.scheme or "http").split(",")[0].strip()
+        forwarded = request.headers.get("X-Forwarded-Host")
+        if forwarded:
+            host = forwarded.split(",")[0].strip()
+            host = _merge_forwarded_host_port(host, proto)
+        else:
+            host = (request.host or "").split(",")[0].strip()
+        if not host:
+            return "http://localhost:8051"
+        return f"{proto}://{host}"
+    except RuntimeError:
+        return "http://localhost:8051"
+
+
 def api_base_url():
     """获取对外 API 基础根地址，智能识别反向代理协议（如 Nginx X-Forwarded-Proto）并自适应环境。"""
-    import os
-    env_base = os.getenv("API_BASE_URL") or os.getenv("BASE_URL")
-    if env_base:
-        return env_base.rstrip("/") + "/"
-    try:
-        if not request:
-            return "http://localhost:8051/"
-        proto = request.headers.get("X-Forwarded-Proto", request.scheme)
-        host = request.headers.get("X-Forwarded-Host", request.host)
-        return f"{proto}://{host}/"
-    except RuntimeError:
-        return "http://localhost:8051/"
+    return public_request_origin() + "/"
 
 
 def is_api_enabled():

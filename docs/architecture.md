@@ -168,7 +168,8 @@ class ExampleParser(BaseParser):
     "image_list": [
       {
         "url": "https://p3-pc.douyinpic.com/image1.jpeg",
-        "live_photo_url": "https://aweme.snssdk.com/aweme/v1/play/live_photo.mp4"
+        "live_photo_url": "https://aweme.snssdk.com/aweme/v1/play/live_photo.mp4",
+        "live_asset_url": "https://example.com/api/v1/live-photo/AbCd1234/LIVEMP.jpg"
       }
     ],
     "video_list": []

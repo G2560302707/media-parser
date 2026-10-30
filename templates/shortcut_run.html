@@ -90,7 +90,7 @@
     function imageUrl(item) {
         if (!item) return '';
         if (typeof item === 'string') return item;
-        return item.live_photo_url || item.url || '';
+        return item.live_asset_url || item.live_photo_url || item.url || '';
     }
     function stillUrl(item) {
         if (!item) return '';
@@ -137,10 +137,11 @@
             images.forEach(function (item, i) {
                 var src = stillUrl(item);
                 var save = imageUrl(item);
+                var liveAsset = item && typeof item === 'object' && item.live_asset_url;
                 var live = item && typeof item === 'object' && item.live_photo_url;
                 html += '<div class="space-y-1.5">';
                 if (src) html += '<img src="' + esc(src) + '" alt="" class="w-full rounded-lg object-cover aspect-square bg-slate-100" referrerpolicy="no-referrer">';
-                html += '<button type="button" class="save-btn w-full h-9 rounded-lg border border-slate-200 text-xs font-semibold" data-url="' + esc(save) + '" data-name="image-' + (i + 1) + (live ? '.mp4' : '.jpg') + '" data-mime="' + (live ? 'video/mp4' : 'image/jpeg') + '">' + (live ? '存实况视频' : '保存') + '</button>';
+                html += '<button type="button" class="save-btn w-full h-9 rounded-lg border border-slate-200 text-xs font-semibold" data-url="' + esc(save) + '" data-name="image-' + (i + 1) + (liveAsset || !live ? '.jpg' : '.mp4') + '" data-mime="' + (liveAsset || !live ? 'image/jpeg' : 'video/mp4') + '">' + (liveAsset ? '存实况照片' : (live ? '存实况视频' : '保存')) + '</button>';
                 html += '</div>';
             });
             html += '</div>';

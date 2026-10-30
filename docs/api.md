@@ -89,7 +89,8 @@ curl -X POST "http://localhost:5000/api/v1/parse" \
     "image_list": [
       {
         "url": "https://p3-pc.douyinpic.com/image1.jpeg",
-        "live_photo_url": "https://aweme.snssdk.com/aweme/v1/play/live_photo.mp4"
+        "live_photo_url": "https://aweme.snssdk.com/aweme/v1/play/live_photo.mp4",
+        "live_asset_url": "https://example.com/api/v1/live-photo/AbCd1234/LIVEMP.jpg"
       }
     ],
     "video_list": [
@@ -117,7 +118,9 @@ curl -X POST "http://localhost:5000/api/v1/parse" \
 
 3. **图集与实况图 (`image_list`)**：
    - 普通静态图片：数组元素为高清图片直链字符串 `["https://..."]`；
-   - 实况图（Live Photo）：数组元素为对象结构 `[{"url": "封面图片直链", "live_photo_url": "动态视频片段直链"}]`。
+   - 实况图（Live Photo）：数组元素为对象结构 `{"url": "封面静图直链", "live_photo_url": "动轨视频直链", "live_asset_url": "本服务合成的实况照片 JPEG"}`。
+   - `live_asset_url` 是把静图和动轨合成后的 Motion Photo JPEG，路径以 `/LIVEMP.jpg` 结尾（文件名必须是 `*MP.jpg`）。地址约 2 小时有效。快捷指令 1.8 只把这份 JPEG 存进相册，不再把动轨另存成视频。
+   - 也可直接访问 `GET /api/v1/live-photo/{token}/LIVEMP.jpg`（旧地址仍可用；token 来自解析结果，无需再带 API Key）。
 
 4. **多视频与合集 (`video_list`)**：
    - 单视频作品：主视频直链放在 `video_url` 中；
@@ -157,3 +160,13 @@ curl -X POST "http://localhost:5000/api/v1/parse" \
 | **503** | `API_DISABLED` | `API 服务已暂停` | 全局维护中 |
 | **503** | `PLATFORM_DISABLED` | `{platform} 接口维护中` | 该平台在管理后台被单独禁用 |
 | **500** | `INTERNAL_ERROR` | `功能太火爆啦，请稍后再试` | 服务端未捕获异常兜底 |
+| **404** | `LIVE_PHOTO_EXPIRED` | `实况照片已过期或不存在，请重新解析` | `live_asset_url` 约 2 小时有效，过期后重新走 `/parse` |
+| **422** | `LIVE_PHOTO_BUILD_FAILED` | `无法合成实况照片` / `下载静图或动轨失败` | 动轨或静图拉取失败；快捷指令可回退保存 `live_photo_url` |
+
+## 5. 实况照片合成 (`GET /api/v1/live-photo/{token}`)
+
+解析结果里的 `live_asset_url` 指向本接口（`/LIVEMP.jpg`）。服务端拉取静图与动轨，合成带 Motion Photo 元数据的 JPEG 后返回 `image/jpeg`。旧地址仍然可用。
+
+- 鉴权：token 本身不可猜测，不必再带 API Key
+- 时效：登记后约 2 小时
+- 客户端：iOS 快捷指令 1.8 把合成文件写成 `LIVE*MP.jpg` 后整份存相册，不再另存动轨视频

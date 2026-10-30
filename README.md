@@ -202,7 +202,8 @@ curl 'http://localhost:8051/api/v1/parse?key=mp-xxx&url=https://v.douyin.com/xxx
       "https://... (普通图集地址)",
       {
         "url": "https://... (实况图封面地址)",
-        "live_photo_url": "https://... (实况图视频原件地址)"
+        "live_photo_url": "https://... (实况图视频原件地址)",
+        "live_asset_url": "https://.../api/v1/live-photo/.../LIVEMP.jpg (Motion Photo JPEG)"
       }
     ],
     "subtitles": [
