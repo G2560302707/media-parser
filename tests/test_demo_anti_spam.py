@@ -50,18 +50,13 @@ class DemoAntiSpamTest(unittest.TestCase):
         mock_factory.return_value = mock_parser
 
         self.app.testing = False
-        # 前 5 次成功处理（频率校验通过）
-        for i in range(5):
+        # 生产模式（testing=False）：未登录且未携带 API Key，匿名解析一律 401 拒绝
+        for i in range(6):
             res = self.client.post("/api/parse", json={"text": f"https://v.douyin.com/test{i}/"})
-            self.assertNotEqual(res.status_code, 429)
-
-        # 第 6 次被 IP 限流 429 拦截
-        res6 = self.client.post("/api/parse", json={"text": "https://v.douyin.com/test6/"})
-        self.assertEqual(res6.status_code, 429)
-        data6 = res6.get_json()
-        self.assertFalse(data6["succ"])
-        self.assertEqual(data6["error_code"], "RATE_LIMITED")
-        self.assertIn("体验解析过于频繁", data6["retdesc"])
+            self.assertEqual(res.status_code, 401)
+            data = res.get_json()
+            self.assertFalse(data["succ"])
+            self.assertEqual(data["error_code"], "API_KEY_REQUIRED")
 
 
 if __name__ == "__main__":

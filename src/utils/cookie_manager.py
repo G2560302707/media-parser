@@ -1,4 +1,23 @@
 import os
+from contextlib import contextmanager
+from contextvars import ContextVar
+
+
+_cookie_suppressed = ContextVar("cookie_suppressed", default=False)
+
+
+def cookies_suppressed():
+    return _cookie_suppressed.get()
+
+
+@contextmanager
+def without_platform_cookies():
+    """仅在当前解析上下文禁用凭据，不影响并发请求及已导入的函数引用。"""
+    token = _cookie_suppressed.set(True)
+    try:
+        yield
+    finally:
+        _cookie_suppressed.reset(token)
 
 # 平台 Cookie 环境变量及别名映射表
 PLATFORM_COOKIE_ALIASES = {
@@ -32,6 +51,8 @@ def get_platform_cookie(platform_key: str, env_var: str | None = None) -> str:
     3. 标准环境变量 ({PLATFORM}_COOKIE)；
     4. 别名列表 (如 XIAOHONGSHU_COOKIE)。
     """
+    if cookies_suppressed():
+        return ""
     key_normalized = platform_key.lower().replace("-", "_")
 
     # 1. 优先读取后台系统设置 (数据库)

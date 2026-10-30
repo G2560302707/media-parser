@@ -246,6 +246,10 @@ def _overview_payload():
     return overview
 
 
+# ----------------------------------------------------------------------
+# 2.5 Cookie 凭据巡检 (Cookie Inspection)
+# ----------------------------------------------------------------------
+
 @bp.get("/cookies")
 @admin_required
 def cookies():
@@ -306,6 +310,30 @@ def cookies_credential():
     if not entry:
         return jsonify({"succ": False, "message": "未注册的平台凭据"}), 400
 
+    # 弹窗同时提交凭据与样例，先校验链接，避免链接报错时凭据已经被修改。
+    form = (request.json or {}) if request.is_json else request.form
+    if "canary_url" in form:
+        from utils.web_fetcher import UrlParser
+
+        canary_url = (form.get("canary_url") or "").strip()
+        if canary_url:
+            detected = UrlParser.get_platform(canary_url)
+            if not detected:
+                # 容错：从整段分享文案中提取首个 http(s) 链接（如「6.43 复制打开抖音… https://v.douyin.com/xxx/ AGv:/」）
+                import re
+                extracted = re.search(r"https?://[^\s'\"<>]+", canary_url)
+                if extracted:
+                    canary_url = extracted.group(0)
+                    detected = UrlParser.get_platform(canary_url)
+            message = (
+                "链接无法识别平台，请粘贴完整的分享链接" if not detected
+                else "测试链接与当前凭据平台不匹配" if detected not in entry["log_names"]
+                else None
+            )
+            if message:
+                return jsonify({"succ": False, "message": message, "field": "canary_url"}), 400
+        set_setting(entry["canary_setting"], canary_url)
+
     db_key = entry["db_keys"][0]  # 元宝/视频号共享凭据，写入设置页主键即可
     set_setting(db_key, value)
     get_db().commit()
@@ -316,7 +344,7 @@ def cookies_credential():
         status, missing = "not_configured", []
     else:
         field = check_cookie_fields(platform_key)
-        status = "healthy" if field["status"] == "ok" else field["status"]
+        status = "unverified" if field["status"] == "ok" else field["status"]
         missing = field["missing"]
         record_probe(platform_key, status, "field_check", field["detail"])
     return jsonify({"succ": True, "data": {"status": status, "missing": missing}})
@@ -356,7 +384,7 @@ def cookies_push():
         status, missing = "not_configured", []
     else:
         field = check_cookie_fields(platform_key)
-        status = "healthy" if field["status"] == "ok" else field["status"]
+        status = "unverified" if field["status"] == "ok" else field["status"]
         missing = field["missing"]
         record_probe(platform_key, status, "field_check", field["detail"])
     return jsonify({"succ": True, "data": {"status": status, "missing": missing}})
@@ -384,6 +412,7 @@ def cookies_probe():
 def cookies_canary():
     """设置平台金丝雀链接。"""
     from src.utils.cookie_registry import COOKIE_REGISTRY, record_probe
+    from src.utils.cookie_samples import default_probe_sample
     from utils.web_fetcher import UrlParser
 
     platform_key = (request.json or {}).get("platform") if request.is_json else request.form.get("platform")
@@ -395,18 +424,26 @@ def cookies_canary():
     entry = COOKIE_REGISTRY[platform_key]
     if not url:
         set_setting(entry["canary_setting"], "")
+        record_probe(platform_key, "unverified", "field_check", "已恢复默认测试链接，请重新验证")
         get_db().commit()
-        return jsonify({"succ": True, "message": "已清空金丝雀，将使用内置默认样例"})
-    if not UrlParser.get_platform(url):
+        message = "已恢复样本库默认链接" if default_probe_sample(platform_key) else "已清空测试链接，暂无默认样例，请填写链接后验证"
+        return jsonify({"succ": True, "message": message})
+    detected_platform = UrlParser.get_platform(url)
+    if not detected_platform:
         # 容错：从整段分享文案中提取首个 http(s) 链接（如「6.43 复制打开抖音… https://v.douyin.com/xxx/ AGv:/」）
         import re
         extracted = re.search(r"https?://[^\s'\"<>]+", url)
-        if not extracted or not UrlParser.get_platform(extracted.group(0)):
+        if extracted:
+            url = extracted.group(0)
+            detected_platform = UrlParser.get_platform(url)
+        if not detected_platform:
             return jsonify({"succ": False, "message": "链接无法识别平台，请粘贴完整的分享链接"}), 400
-        url = extracted.group(0)
+
+    if detected_platform not in entry["log_names"]:
+        return jsonify({"succ": False, "message": "测试链接与当前凭据平台不匹配"}), 400
 
     set_setting(entry["canary_setting"], url)
-    record_probe(platform_key, "healthy", "field_check", "金丝雀链接已更新")
+    record_probe(platform_key, "unverified", "field_check", "测试样例链接已更新，请重新验证")
     get_db().commit()
     return jsonify({"succ": True, "message": "金丝雀链接已保存"})
 
@@ -544,8 +581,8 @@ def reset_password(user_id):
         return redirect(url_for("admin.users"))
 
     new_password = request.form.get("new_password", "")
-    if len(new_password) < 8:
-        flash("重置密码至少需要 8 位", "error")
+    if len(new_password) < 6:
+        flash("重置密码至少需要 6 位", "error")
         return redirect(url_for("admin.users"))
 
     db.execute(

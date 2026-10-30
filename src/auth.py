@@ -141,8 +141,8 @@ def setup():
             username = request.form.get("username", "").strip()
             password = request.form.get("password", "")
             confirm_password = request.form.get("confirm_password", "")
-            if len(username) < 3 or len(password) < 8:
-                flash("用户名至少 3 位，密码至少 8 位", "error")
+            if len(username) < 3 or len(password) < 6:
+                flash("用户名至少 3 位，密码至少 6 位", "error")
             elif password != confirm_password:
                 flash("两次输入的密码不一致", "error")
             else:
@@ -172,8 +172,8 @@ def register():
             username = request.form.get("username", "").strip()
             password = request.form.get("password", "")
             confirm_password = request.form.get("confirm_password", "")
-            if len(username) < 3 or len(password) < 8:
-                flash("用户名至少 3 位，密码至少 8 位", "error")
+            if len(username) < 3 or len(password) < 6:
+                flash("用户名至少 3 位，密码至少 6 位", "error")
             elif password != confirm_password:
                 flash("两次输入的密码不一致", "error")
             else:
@@ -195,24 +195,32 @@ def register():
                         (user_id, SHORTCUT_KEY_NAME, raw_key, utcnow()),
                     )
                     db.commit()
+
+                    # 对应场景文案：
+                    # A（赠送额度，无时间限制）: 欢迎使用 Media Parser！已发放 {credits} 点免费额度，前往「API 密钥」获取凭证
+                    # B（无限额度，无到期）: 欢迎使用 Media Parser！无限额度已启用，前往「API 密钥」获取凭证
+                    # C（限时试用，固定额度）: 欢迎使用 Media Parser！试用开通，{credits} 点额度已发放，前往「API 密钥」获取凭证
+                    # D（限时试用，无限额度）: 欢迎使用 Media Parser！试用开通，无限额度已启用，前往「API 密钥」获取凭证
                     if trial_days > 0:
                         if initial_credits == -1:
-                            msg = f"注册成功！已自动开启 {trial_days} 天免费试用并享有无限解析额度"
+                            msg = f"欢迎使用 Media Parser！试用开通，{trial_days} 天免费试用，无限额度已启用，前往「API 密钥」获取凭证"
                         elif initial_credits > 0:
-                            msg = f"注册成功！已自动开启 {trial_days} 天免费试用并赠送 {initial_credits} 积分"
+                            msg = f"欢迎使用 Media Parser！试用开通，{trial_days} 天免费试用，{initial_credits} 点额度已发放，前往「API 密钥」获取凭证"
                         else:
-                            msg = f"注册成功！已自动开启 {trial_days} 天免费试用"
+                            msg = f"欢迎使用 Media Parser！试用开通，{trial_days} 天免费试用，前往「API 密钥」获取凭证"
                     else:
                         if initial_credits == -1:
-                            msg = "注册成功！账号永久有效并享有无限解析额度"
+                            msg = "欢迎使用 Media Parser！无限额度已启用，前往「API 密钥」获取凭证"
                         elif initial_credits > 0:
-                            msg = f"注册成功！账号永久有效并赠送 {initial_credits} 积分"
+                            msg = f"欢迎使用 Media Parser！已发放 {initial_credits} 点免费额度，前往「API 密钥」获取凭证"
                         else:
-                            msg = "注册成功！账号永久有效"
+                            msg = "欢迎使用 Media Parser！前往「API 密钥」获取凭证"
                     from_shortcut = (request.form.get("from") or request.args.get("from") or "") == "shortcut"
+                    # 已登录用户再走注册页：提示后回到登录页
                     if session.get("user_id"):
                         flash(msg, "success")
                         return redirect(url_for("auth.login"))
+                    # 自动登录并签发会话（含新签发的快捷指令密钥，欢迎页展示）
                     session.clear()
                     session["user_id"] = user_id
                     session.permanent = True
@@ -291,8 +299,8 @@ def change_password():
 
     if not check_password_hash(g.user["password_hash"], old_password):
         flash("原密码错误", "error")
-    elif len(new_password) < 8:
-        flash("新密码至少需要 8 位", "error")
+    elif len(new_password) < 6:
+        flash("新密码至少需要 6 位", "error")
     elif new_password != confirm_password:
         flash("两次输入的新密码不一致", "error")
     else:

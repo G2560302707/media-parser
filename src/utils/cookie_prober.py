@@ -2,55 +2,30 @@
 
 同一条金丝雀链接分别带当前 Cookie 与强制无 Cookie 各解析一次：
 
-- 两路都成功且结果一致 → healthy（增益型平台提示可更换金丝雀）
+- 两路都成功且未观察到增益 → unverified（不能证明凭据有效）
 - 带 Cookie 成功、无 Cookie 失败/降级 → healthy（Cookie 增益明确）
 - 带 Cookie 失败、无 Cookie 成功 → stale（凭据已失效的实锤信号）
 - 两路都失败 → probe_failed（金丝雀链接或网络问题，不怪 Cookie）
 
 探针直接复用解析链路（ParserFactory 建实例），不走 HTTP 自调用，
-不占用 worker 与限流额度；"强制无 Cookie"通过临时遮蔽
-cookie_manager.get_platform_cookie 实现，不改动解析器本身。
+不占用 worker 与限流额度；"强制无 Cookie"通过 ContextVar 隔离当前解析的凭据读取，不改动其他请求。
 """
 
-import logging
 import threading
 import time
-from contextlib import contextmanager
 
 from configs.logging_config import get_logger
 from src.db import setting
 from src.parser_factory import ParserFactory
 from src.utils import cookie_registry
-from src.utils.cookie_manager import get_platform_cookie as _real_get_platform_cookie
+from src.utils.cookie_manager import without_platform_cookies as _no_cookie
+from src.utils.cookie_samples import default_probe_sample
 from utils.web_fetcher import UrlParser, WebFetcher
 
 logger = get_logger(__name__)
 
 # 同平台探针最小间隔（秒），防止管理员连点触发目标平台风控。
 PROBE_DEBOUNCE_SECONDS = 5 * 60
-
-# 内置金丝雀：优先读 system_settings 的 canary_{platform}，为空时用内置样例。
-DEFAULT_CANARIES = {
-    # 抖音实况作品（测试集样例）：无 Cookie 时仅返回静态图，可体现增益差异。
-    "douyin": "https://v.douyin.com/ZtiyRAA2JLs/",
-}
-
-
-@contextmanager
-def _no_cookie():
-    """临时遮蔽所有平台 Cookie 读取，用于无 Cookie 对照路。"""
-
-    def _blank(platform_key=None, env_var=None):
-        return ""
-
-    import src.utils.cookie_manager as cm
-
-    original = cm.get_platform_cookie
-    cm.get_platform_cookie = _blank
-    try:
-        yield
-    finally:
-        cm.get_platform_cookie = original
 
 
 def _canary_url(platform_key):
@@ -60,11 +35,20 @@ def _canary_url(platform_key):
     url = (setting(entry["canary_setting"]) or "").strip()
     if url:
         return url
-    return DEFAULT_CANARIES.get(platform_key)
+    sample = default_probe_sample(platform_key)
+    return sample["url"] if sample else None
 
 
 def _run_parse(share_url, expected_platforms):
     """复用解析链路跑一次完整解析，返回统一的媒体结果摘要。"""
+    try:
+        return _parse_media(share_url, expected_platforms)
+    except Exception as exc:
+        logger.warning("Cookie 探针单路解析失败: %s", type(exc).__name__)
+        return {"ok": False, "reason": "PARSE_EXCEPTION", "detail": {}}
+
+
+def _parse_media(share_url, expected_platforms):
     redirect_url = WebFetcher.fetch_redirect_url(share_url)
     if not redirect_url:
         return {"ok": False, "reason": "REDIRECT_FAILED", "detail": "短链重定向失败"}
@@ -88,13 +72,14 @@ def _run_parse(share_url, expected_platforms):
         if isinstance(img, dict) and img.get("live_photo_url")
     ]
     has_media = bool(
-        result["video_url"] or result["cover_url"] or result["image_list"] or result["audio_url"]
+        result["video_url"] or result["video_list"] or result["image_list"] or result["audio_url"]
     )
     return {
         "ok": has_media,
         "reason": "OK" if has_media else "MEDIA_NOT_FOUND",
         "detail": {
-            "has_video": bool(result["video_url"]),
+            "has_video": bool(result["video_url"] or result["video_list"]),
+            "has_audio": bool(result["audio_url"]),
             "image_count": len(result["image_list"]),
             "live_count": len(live_urls),
         },
@@ -117,10 +102,14 @@ def _judge(platform_key, with_result, without_result):
         gain = (
             with_result.get("live_count", 0) > without_result.get("live_count", 0)
         )
+        gain = gain or any(
+            with_result["detail"].get(key, 0) > without_result["detail"].get(key, 0)
+            for key in ("has_video", "has_audio", "image_count")
+        )
         if gain:
             return "healthy", {"signal": "COOKIE_GAIN", "with": with_result["detail"], "without": without_result["detail"]}
-        return "healthy", {"signal": "BOTH_OK", "with": with_result["detail"], "without": without_result["detail"],
-                           "note": "两路结果一致，金丝雀未能体现增益，建议更换样例"}
+        return "unverified", {"signal": "BOTH_OK", "with": with_result["detail"], "without": without_result["detail"],
+                           "note": "两路均可解析，未检测到 Cookie 增益，凭据有效性待验证；可更换依赖凭据的样例"}
     if with_result["ok"] and not without_result["ok"]:
         return "healthy", {"signal": "COOKIE_GAIN", "with": with_result["detail"],
                            "without": {"reason": without_result["reason"]}}
@@ -146,7 +135,7 @@ def probe_platform(platform_key, force=False):
     canary = _canary_url(platform_key)
     if not canary:
         return {"status": "probe_failed",
-                "detail": {"error": "未配置金丝雀链接，请在巡检页设置后重试"},
+                "detail": {"error": "暂无默认探针样例，请在巡检页填写测试样例链接"},
                 "duration_ms": 0}
 
     with _probe_lock:
